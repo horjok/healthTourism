@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
     const id        = searchParams.get('id');
     const uzmanlik  = searchParams.get('uzmanlik') ?? undefined;
     const maxFiyat  = searchParams.get('max_fiyat');
+    const klinikId  = searchParams.get('klinik_id') ?? undefined;
 
     // Tek paket sorgusu
     if (id) {
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     const data = await getPaketler({
       uzmanlik,
       max_fiyat: maxFiyat ? Number(maxFiyat) : undefined,
+      klinik_id: klinikId,
     });
 
     return NextResponse.json({ success: true, data });

@@ -44,6 +44,7 @@ interface PaketFiltreler {
   uzmanlik?: string;
   max_fiyat?: number;
   tarih?: string;
+  klinik_id?: string;
 }
 
 export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> {
@@ -54,8 +55,21 @@ export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> 
       klinik:klinikler(*)
     `);
 
+  if (filtreler?.klinik_id) {
+    query = query.eq('klinik_id', filtreler.klinik_id);
+  }
+
+  // PostgREST join üzerinden dizi filtresi çalışmadığı için
+  // önce eşleşen klinik ID'lerini çekip paketleri ona göre filtrele
   if (filtreler?.uzmanlik) {
-    query = query.contains('klinik.uzmanlik', [filtreler.uzmanlik]);
+    const { data: klinikler } = await supabase
+      .from('klinikler')
+      .select('id')
+      .contains('uzmanlik', [filtreler.uzmanlik]);
+
+    const klinikIds = (klinikler ?? []).map((k) => k.id);
+    if (klinikIds.length === 0) return []; // Eşleşen klinik yok
+    query = query.in('klinik_id', klinikIds);
   }
 
   if (filtreler?.max_fiyat !== undefined) {
@@ -108,6 +122,19 @@ export async function createRezervasyon(rezervasyon: YeniRezervasyon): Promise<R
     .single();
 
   if (error) throw new Error(`Rezervasyon oluşturulamadı: ${error.message}`);
+  return data as Rezervasyon;
+}
+
+export async function cancelRezervasyonById(id: string, kullanici_id: string): Promise<Rezervasyon> {
+  const { data, error } = await supabase
+    .from('rezervasyonlar')
+    .update({ durum: 'iptal' })
+    .eq('id', id)
+    .eq('kullanici_id', kullanici_id) // güvenlik: sadece kendi rezervasyonunu iptal edebilir
+    .select(`*, paket:paketler(*, klinik:klinikler(*))`)
+    .single();
+
+  if (error) throw new Error(`Rezervasyon iptal edilemedi: ${error.message}`);
   return data as Rezervasyon;
 }
 

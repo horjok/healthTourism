@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPaketById, createRezervasyon, getKullaniciRezervasyonlari } from '@/lib/supabase';
+import { getPaketById, createRezervasyon, getKullaniciRezervasyonlari, cancelRezervasyonById } from '@/lib/supabase';
 import { processMockPayment } from '@/lib/mock-payment';
 
 interface BookingIstegi {
@@ -44,6 +44,27 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json(
       { success: false, error: 'Rezervasyon oluşturulamadı' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = (await req.json()) as { id: string; kullanici_id: string };
+
+    if (!body.id || !body.kullanici_id) {
+      return NextResponse.json(
+        { success: false, error: 'id ve kullanici_id zorunludur' },
+        { status: 400 }
+      );
+    }
+
+    const data = await cancelRezervasyonById(body.id, body.kullanici_id);
+    return NextResponse.json({ success: true, data });
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'Rezervasyon iptal edilemedi' },
       { status: 500 }
     );
   }
