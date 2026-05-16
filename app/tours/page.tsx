@@ -131,7 +131,7 @@ export default function ToursPage() {
 
         {/* Kategori filtreleri */}
         <div className="flex gap-2 mb-8 flex-wrap">
-          {CATEGORIES.map((cat, i) => (
+          {CATEGORIES.map((cat) => (
             <button key={cat} onClick={() => setCategory(cat)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 category === cat
