@@ -226,11 +226,11 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
           <AdimGostergesi aktif={1} />
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Şikayetiniz nedir?
+              Size nasıl yardımcı olabiliriz?
             </label>
             <textarea
               rows={4}
-              placeholder="ör. Dizimde ağrı var, ameliyat düşünüyorum. Ya da diş implantı yaptırmak istiyorum..."
+              placeholder="ör. Sağlık durumunuzu ve beklentilerinizi paylaşın — diş tedavisi, göz ameliyatı, estetik müdahale veya check-up için size özel paket bulalım."
               value={sikayet}
               onChange={(e) => setSikayet(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30"
@@ -366,15 +366,11 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
         onClick={kapat}
       />
 
-      {/* Sağdan kayan panel (desktop) / alttan kayan (mobil) */}
+      {/* Sağdan kayan drawer — tüm ekran boyutlarında tutarlı */}
       <div
-        className={`fixed z-50 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out
-          bottom-0 left-0 right-0 rounded-t-3xl max-h-[92vh]
-          sm:bottom-auto sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-full sm:max-w-md sm:rounded-none sm:rounded-l-3xl
-          ${isOpen
-            ? 'translate-y-0 sm:translate-x-0'
-            : 'translate-y-full sm:translate-y-0 sm:translate-x-full'
-          }`}
+        className={`fixed right-0 top-0 h-full w-full max-w-md z-50 bg-white shadow-2xl flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Başlık */}
         <div

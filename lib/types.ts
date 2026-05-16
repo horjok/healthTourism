@@ -14,6 +14,7 @@ export interface Paket {
   baslik: string;
   klinik: Klinik;
   otel_isim: string;
+  otel_dahil: boolean;
   ucus_dahil: boolean;
   toplam_fiyat: number;
   sure_gun: number;

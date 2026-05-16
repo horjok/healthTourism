@@ -8,18 +8,26 @@ export async function GET(req: NextRequest) {
     const uzmanlik  = searchParams.get('uzmanlik') ?? undefined;
     const maxFiyat  = searchParams.get('max_fiyat');
     const klinikId  = searchParams.get('klinik_id') ?? undefined;
+    const sehir     = searchParams.get('sehir') ?? undefined;
+    const minPuan   = searchParams.get('min_puan');
+    const ucusDahil = searchParams.get('ucus_dahil');
+    const otelDahil = searchParams.get('otel_dahil');
+    const akredite  = searchParams.get('akredite');
 
-    // Tek paket sorgusu
     if (id) {
       const data = await getPaketById(id);
       return NextResponse.json({ success: true, data });
     }
 
-    // Liste sorgusu — filtreler opsiyonel
     const data = await getPaketler({
       uzmanlik,
-      max_fiyat: maxFiyat ? Number(maxFiyat) : undefined,
+      max_fiyat: maxFiyat  ? Number(maxFiyat)  : undefined,
+      min_puan:  minPuan   ? Number(minPuan)   : undefined,
       klinik_id: klinikId,
+      sehir,
+      ucus_dahil: ucusDahil === 'true' ? true : ucusDahil === 'false' ? false : undefined,
+      otel_dahil: otelDahil === 'true' ? true : otelDahil === 'false' ? false : undefined,
+      akredite:   akredite  === 'true' ? true : akredite  === 'false' ? false : undefined,
     });
 
     return NextResponse.json({ success: true, data });

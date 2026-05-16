@@ -52,43 +52,48 @@ interface PaketFiltreler {
   max_fiyat?: number;
   tarih?: string;
   klinik_id?: string;
+  sehir?: string;
+  ucus_dahil?: boolean;
+  otel_dahil?: boolean;
+  akredite?: boolean;
+  min_puan?: number;
 }
 
 export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> {
   let query = getSupabase()
     .from('paketler')
-    .select(`
-      *,
-      klinik:klinikler(*)
-    `);
+    .select(`*, klinik:klinikler(*)`);
 
   if (filtreler?.klinik_id) {
     query = query.eq('klinik_id', filtreler.klinik_id);
   }
 
-  // PostgREST join üzerinden dizi filtresi çalışmadığı için
-  // önce eşleşen klinik ID'lerini çekip paketleri ona göre filtrele
-  if (filtreler?.uzmanlik) {
-    const { data: klinikler } = await getSupabase()
-      .from('klinikler')
-      .select('id')
-      .contains('uzmanlik', [filtreler.uzmanlik]);
+  // Klinik tarafı filtreler — tek sorguda tüm kısıtları uygula
+  const klinikFiltreliMi =
+    filtreler?.uzmanlik ||
+    filtreler?.sehir ||
+    filtreler?.akredite !== undefined ||
+    filtreler?.min_puan !== undefined;
 
-    const klinikIds = (klinikler ?? []).map((k) => k.id);
-    if (klinikIds.length === 0) return []; // Eşleşen klinik yok
-    query = query.in('klinik_id', klinikIds);
+  if (klinikFiltreliMi) {
+    let kq = getSupabase().from('klinikler').select('id');
+    if (filtreler?.uzmanlik) kq = kq.contains('uzmanlik', [filtreler.uzmanlik]);
+    if (filtreler?.sehir)    kq = kq.eq('sehir', filtreler.sehir);
+    if (filtreler?.akredite !== undefined) kq = kq.eq('akredite', filtreler.akredite);
+    if (filtreler?.min_puan !== undefined) kq = kq.gte('puan', filtreler.min_puan);
+
+    const { data: klinikler } = await kq;
+    const ids = (klinikler ?? []).map((k) => k.id);
+    if (ids.length === 0) return [];
+    query = query.in('klinik_id', ids);
   }
 
-  if (filtreler?.max_fiyat !== undefined) {
-    query = query.lte('toplam_fiyat', filtreler.max_fiyat);
-  }
-
-  if (filtreler?.tarih) {
-    query = query.gte('tarih', filtreler.tarih);
-  }
+  if (filtreler?.max_fiyat !== undefined)  query = query.lte('toplam_fiyat', filtreler.max_fiyat);
+  if (filtreler?.tarih)                    query = query.gte('tarih', filtreler.tarih);
+  if (filtreler?.ucus_dahil !== undefined) query = query.eq('ucus_dahil', filtreler.ucus_dahil);
+  if (filtreler?.otel_dahil !== undefined) query = query.eq('otel_dahil', filtreler.otel_dahil);
 
   const { data, error } = await query.order('toplam_fiyat', { ascending: true });
-
   if (error) throw new Error(`Paketler getirilemedi: ${error.message}`);
   return data as Paket[];
 }

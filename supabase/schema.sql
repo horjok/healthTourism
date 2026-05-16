@@ -20,13 +20,17 @@ CREATE TABLE IF NOT EXISTS paketler (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   baslik         TEXT        NOT NULL,
   klinik_id      UUID        NOT NULL REFERENCES klinikler(id) ON DELETE CASCADE,
-  otel_isim      TEXT        NOT NULL,
+  otel_isim      TEXT        NOT NULL DEFAULT '',
+  otel_dahil     BOOLEAN     NOT NULL DEFAULT TRUE,
   ucus_dahil     BOOLEAN     NOT NULL DEFAULT FALSE,
   toplam_fiyat   NUMERIC     NOT NULL CHECK (toplam_fiyat >= 0),
   sure_gun       INTEGER     NOT NULL CHECK (sure_gun > 0),
   aciklama       TEXT        NOT NULL,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Mevcut tabloya kolon eklemek için (zaten tablo varsa)
+ALTER TABLE paketler ADD COLUMN IF NOT EXISTS otel_dahil BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- 3. rezervasyonlar
 CREATE TABLE IF NOT EXISTS rezervasyonlar (
