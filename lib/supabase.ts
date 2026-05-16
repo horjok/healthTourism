@@ -1,24 +1,31 @@
 // SUNUCU TARAFI — Bu dosyayı yalnızca API route'larında ve Server Component'larda kullan.
 // Client Component'larda @/lib/supabase-client kullan, aksi hâlde addListener hatası alırsın.
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Klinik, Paket, Rezervasyon } from './types';
 
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      persistSession: false,    // sunucuda localStorage yok
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          persistSession: false,    // sunucuda localStorage yok
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      }
+    );
   }
-);
+  return _supabase;
+}
 
 // ─── Klinikler ────────────────────────────────────────────────────────────────
 
 export async function getKlinikler(): Promise<Klinik[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('klinikler')
     .select('*')
     .order('puan', { ascending: false });
@@ -28,7 +35,7 @@ export async function getKlinikler(): Promise<Klinik[]> {
 }
 
 export async function getKlinikById(id: string): Promise<Klinik> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('klinikler')
     .select('*')
     .eq('id', id)
@@ -48,7 +55,7 @@ interface PaketFiltreler {
 }
 
 export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> {
-  let query = supabase
+  let query = getSupabase()
     .from('paketler')
     .select(`
       *,
@@ -62,7 +69,7 @@ export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> 
   // PostgREST join üzerinden dizi filtresi çalışmadığı için
   // önce eşleşen klinik ID'lerini çekip paketleri ona göre filtrele
   if (filtreler?.uzmanlik) {
-    const { data: klinikler } = await supabase
+    const { data: klinikler } = await getSupabase()
       .from('klinikler')
       .select('id')
       .contains('uzmanlik', [filtreler.uzmanlik]);
@@ -87,7 +94,7 @@ export async function getPaketler(filtreler?: PaketFiltreler): Promise<Paket[]> 
 }
 
 export async function getPaketById(id: string): Promise<Paket> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('paketler')
     .select(`
       *,
@@ -107,7 +114,7 @@ type YeniRezervasyon = Omit<Rezervasyon, 'id' | 'olusturma_tarihi' | 'paket'> & 
 };
 
 export async function createRezervasyon(rezervasyon: YeniRezervasyon): Promise<Rezervasyon> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('rezervasyonlar')
     .insert({
       kullanici_id: rezervasyon.kullanici_id,
@@ -126,7 +133,7 @@ export async function createRezervasyon(rezervasyon: YeniRezervasyon): Promise<R
 }
 
 export async function cancelRezervasyonById(id: string, kullanici_id: string): Promise<Rezervasyon> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('rezervasyonlar')
     .update({ durum: 'iptal' })
     .eq('id', id)
@@ -139,7 +146,7 @@ export async function cancelRezervasyonById(id: string, kullanici_id: string): P
 }
 
 export async function getKullaniciRezervasyonlari(kullanici_id: string): Promise<Rezervasyon[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('rezervasyonlar')
     .select(`
       *,
