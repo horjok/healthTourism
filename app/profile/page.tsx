@@ -30,7 +30,6 @@ type Sekme = 'rezervasyonlar' | 'profil';
 
 export default function ProfilePage() {
   const router   = useRouter();
-  const supabase = getSupabaseClient();
 
   const [kullanici, setKullanici]           = useState<User | null>(null);
   const [rezervasyonlar, setRezervasyonlar] = useState<Rezervasyon[]>([]);
@@ -48,6 +47,7 @@ export default function ProfilePage() {
   const [adMesaj, setAdMesaj]               = useState<{ tur: 'basari' | 'hata'; metin: string } | null>(null);
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         router.replace('/auth');
@@ -70,12 +70,13 @@ export default function ProfilePage() {
         setRezYukleniyor(false);
       }
     });
-  }, [supabase, router]);
+  }, [router]);
 
   // ── İptal isteği — kullanıcı oturumu olan client ile direkt Supabase ─────────
   async function iptalEt(rezId: string) {
     if (!kullanici) return;
     setIptalDurum((prev) => ({ ...prev, [rezId]: 'yukleniyor' }));
+    const supabase = getSupabaseClient();
     try {
       const { data, error } = await supabase
         .from('rezervasyonlar')
@@ -105,6 +106,7 @@ export default function ProfilePage() {
     e.preventDefault();
     setAdKaydediliyor(true);
     setAdMesaj(null);
+    const supabase = getSupabaseClient();
     try {
       const { error } = await supabase.auth.updateUser({
         data: { display_name: goruntulenenAd.trim() },

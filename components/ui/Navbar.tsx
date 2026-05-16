@@ -21,7 +21,6 @@ function CartBadge() {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = getSupabaseClient();
   const { dil, setDil } = useDilContext();
   const tr = dil === 'tr';
 
@@ -40,6 +39,7 @@ const LINKLER = [
 ];
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
     supabase.auth.getUser().then(({ data }) => {
       setKullanici(data.user);
       setYuklendi(true);
@@ -48,9 +48,10 @@ const LINKLER = [
       setKullanici(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   async function cikisYap() {
+    const supabase = getSupabaseClient();
     await supabase.auth.signOut();
     setMenuAcik(false);
     router.push('/');

@@ -24,7 +24,6 @@ function hataMesaji(hata: string): string {
 
 export default function AuthPage() {
   const router = useRouter();
-  const supabase = getSupabaseClient();
 
   const [sekme, setSekme]           = useState<Sekme>('giris');
   const [email, setEmail]           = useState('');
@@ -44,6 +43,7 @@ export default function AuthPage() {
     setHata('');
     setBasarili('');
     setGonderiyor(true);
+    const supabase = getSupabaseClient();
 
     try {
       if (sekme === 'giris') {
