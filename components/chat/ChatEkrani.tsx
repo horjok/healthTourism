@@ -85,6 +85,7 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const r: any = new SR();
     r.lang = 'tr-TR'; r.continuous = false; r.interimResults = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     r.onresult = (e: any) =>
       setSikayet(p => `${p} ${e.results[0][0].transcript}`.trim().slice(0, 300));
     r.onend = () => setDinliyor(false);
