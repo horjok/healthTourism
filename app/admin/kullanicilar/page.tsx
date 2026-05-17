@@ -3,12 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AdminKullanici, Klinik, KullaniciRolu } from '@/lib/types';
 
-const ROL_LABEL: Record<string, string> = {
-  user: 'Kullanıcı',
-  clinic_manager: 'Klinik Yöneticisi',
-  super_admin: 'Admin',
-};
-
 const ROL_RENK: Record<string, string> = {
   user: 'bg-gray-100 text-gray-600',
   clinic_manager: 'bg-blue-100 text-blue-700',
