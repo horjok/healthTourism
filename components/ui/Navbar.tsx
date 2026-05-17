@@ -6,11 +6,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz, type Para } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 
 function CartBadge() {
+  const [mounted, setMounted] = useState(false);
   const totalItems = useCartStore(s => s.totalItems());
-  if (totalItems === 0) return null;
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || totalItems === 0) return null;
   return (
     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
       {totalItems > 9 ? '9+' : totalItems}
@@ -22,7 +27,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { dil, setDil } = useDilContext();
+  const { para, setPara } = useDoviz();
   const tr = dil === 'tr';
+
+  const PARALAR: { kod: Para; etiket: string }[] = [
+    { kod: 'EUR', etiket: '€ EUR' },
+    { kod: 'USD', etiket: '$ USD' },
+    { kod: 'GBP', etiket: '£ GBP' },
+    { kod: 'TRY', etiket: '₺ TRY' },
+  ];
 
   const [menuAcik, setMenuAcik] = useState(false);
   const [kullanici, setKullanici] = useState<User | null>(null);
@@ -64,28 +77,48 @@ const LINKLER = [
 
   return (
     <>
-      {/* TR/EN butonu — sabit pozisyon */}
+      {/* Döviz + TR/EN seçiciler — sabit pozisyon */}
       <div style={{
         position: 'fixed', top: '12px', right: '220px', zIndex: 9999,
-        display: 'flex', gap: '2px', background: '#f3f4f6',
-        borderRadius: '12px', padding: '3px'
+        display: 'flex', gap: '6px', alignItems: 'center',
       }}>
-        <button
-          onClick={() => setDil('tr')}
+        {/* Döviz seçici */}
+        <select
+          value={para}
+          onChange={e => setPara(e.target.value as Para)}
           style={{
-            padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
-            fontSize: '12px', border: 'none', cursor: 'pointer',
-            background: dil === 'tr' ? '#0f3460' : 'transparent',
-            color: dil === 'tr' ? 'white' : '#666'
-          }}>TR</button>
-        <button
-          onClick={() => setDil('en')}
-          style={{
-            padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
-            fontSize: '12px', border: 'none', cursor: 'pointer',
-            background: dil === 'en' ? '#0f3460' : 'transparent',
-            color: dil === 'en' ? 'white' : '#666'
-          }}>EN</button>
+            padding: '5px 8px', borderRadius: '9px', fontWeight: 'bold',
+            fontSize: '12px', border: '1px solid #e5e7eb', cursor: 'pointer',
+            background: '#f3f4f6', color: '#374151', outline: 'none',
+          }}
+        >
+          {PARALAR.map(p => (
+            <option key={p.kod} value={p.kod}>{p.etiket}</option>
+          ))}
+        </select>
+
+        {/* TR/EN butonları */}
+        <div style={{
+          display: 'flex', gap: '2px', background: '#f3f4f6',
+          borderRadius: '12px', padding: '3px'
+        }}>
+          <button
+            onClick={() => setDil('tr')}
+            style={{
+              padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
+              fontSize: '12px', border: 'none', cursor: 'pointer',
+              background: dil === 'tr' ? '#0f3460' : 'transparent',
+              color: dil === 'tr' ? 'white' : '#666'
+            }}>TR</button>
+          <button
+            onClick={() => setDil('en')}
+            style={{
+              padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
+              fontSize: '12px', border: 'none', cursor: 'pointer',
+              background: dil === 'en' ? '#0f3460' : 'transparent',
+              color: dil === 'en' ? 'white' : '#666'
+            }}>EN</button>
+        </div>
       </div>
 
       <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-100">

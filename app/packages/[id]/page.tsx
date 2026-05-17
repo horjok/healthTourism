@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Paket } from '@/lib/types';
+import { useCartStore } from '@/lib/cartStore';
 
 // ─── Skeleton loader ─────────────────────────────────────────────────────────
 
@@ -88,9 +89,11 @@ const UZMANLIK_RENK: Record<string, string> = {
 
 export default function PackageDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { addItem, items } = useCartStore();
   const [paket, setPaket]         = useState<Paket | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [bulunamadi, setBulunamadi] = useState(false);
+  const [eklendi, setEklendi]       = useState(false);
 
   useEffect(() => {
     fetch(`/api/packages?id=${params.id}`)
@@ -143,6 +146,20 @@ export default function PackageDetailPage({ params }: { params: { id: string } }
   }
 
   const { klinik } = paket;
+  const sepette = items.some((i) => i.id === paket.id);
+
+  function sepeteEkle() {
+    addItem({
+      id: paket!.id,
+      type: 'package',
+      name: paket!.baslik,
+      detail: `${paket!.sure_gun} gün · ${paket!.klinik.isim} · ${paket!.klinik.sehir}`,
+      unitPrice: paket!.toplam_fiyat,
+      quantity: 1,
+    });
+    setEklendi(true);
+    setTimeout(() => setEklendi(false), 2000);
+  }
 
   return (
     <main className="min-h-screen bg-white">
@@ -264,14 +281,28 @@ export default function PackageDetailPage({ params }: { params: { id: string } }
                 <p className="text-blue-300 text-xs mt-1">kişi başı / tüm dahil</p>
               </div>
 
-              {/* Rezervasyon butonu */}
-              <div className="px-6 py-5 space-y-4">
-                <Link
-                  href={`/booking?paket_id=${paket.id}`}
-                  className="block w-full py-4 bg-[#0f3460] text-white text-center font-bold rounded-xl hover:bg-[#16213e] transition-colors text-base"
+              {/* Aksiyon butonları */}
+              <div className="px-6 py-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={sepeteEkle}
+                  className={`block w-full py-4 text-center font-bold rounded-xl transition-colors text-base ${
+                    eklendi || sepette
+                      ? 'bg-green-500 text-white'
+                      : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
+                  }`}
                 >
-                  Rezervasyon Yap →
-                </Link>
+                  {eklendi ? '✓ Sepete Eklendi!' : sepette ? '✓ Sepette' : '+ Sepete Ekle'}
+                </button>
+
+                {sepette && (
+                  <Link
+                    href="/booking"
+                    className="block w-full py-3 border-2 border-[#0f3460] text-[#0f3460] text-center font-bold rounded-xl hover:bg-[#0f3460] hover:text-white transition-colors text-sm"
+                  >
+                    Sepete Git & Ödeme Yap →
+                  </Link>
+                )}
 
                 <p className="text-xs text-center text-gray-400">
                   Ücretsiz iptal · Kredi kartı gerekmez

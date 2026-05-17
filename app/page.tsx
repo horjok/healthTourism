@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Paket } from '@/lib/types';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 
 function PaketKarti({ paket, dil }: { paket: Paket; dil: 'tr' | 'en' }) {
+  const { formatla } = useDoviz();
   return (
     <Link href={`/packages/${paket.id}`}>
       <div className="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer h-full border border-gray-100">
@@ -34,7 +36,7 @@ function PaketKarti({ paket, dil }: { paket: Paket; dil: 'tr' | 'en' }) {
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-400 mb-0.5">{dil === 'tr' ? 'Toplam fiyat' : 'Total price'}</p>
-              <span className="text-2xl font-extrabold text-[#0f3460]">{paket.toplam_fiyat.toLocaleString('tr-TR')}€</span>
+              <span className="text-2xl font-extrabold text-[#0f3460]">{formatla(paket.toplam_fiyat)}</span>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-400 mb-0.5">{paket.sure_gun} {dil === 'tr' ? 'gün' : 'days'}</p>
@@ -268,6 +270,62 @@ export default function HomePage() {
                   <div className={`${o.ikonBg} w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4`}>{o.ikon}</div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">{o.baslik}</h3>
                   <p className="text-gray-500 text-sm leading-relaxed">{o.aciklama}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* MÜŞTERİ GERİBİLDİRİMLERİ — sağdan sola kayan marquee */}
+      <section className="py-16 overflow-hidden" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%)' }}>
+        <div className="max-w-6xl mx-auto px-6 mb-10 text-center">
+          <p className="text-sm font-semibold text-blue-500 uppercase tracking-wider mb-3">
+            {tr ? 'Müşteri Yorumları' : 'Customer Reviews'}
+          </p>
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            {tr ? 'Onlar Ne Diyor?' : 'What Do They Say?'}
+          </h2>
+        </div>
+
+        <div className="relative">
+          <div className="flex animate-marquee gap-6 w-max">
+            {[
+              { isim: 'James W.', ulke: '🇬🇧 İngiltere', puan: 5, yorum_tr: 'FUE saç ekimi için İstanbul\'a geldim. Klinik muhteşemdi, sonuçtan çok memnunum. HealthTour süreci baştan sona yönetti.', yorum_en: 'Came to Istanbul for FUE hair transplant. The clinic was excellent and I\'m very happy with the results. HealthTour managed the whole process.' },
+              { isim: 'Sophie L.', ulke: '🇩🇪 Almanya', puan: 5, yorum_tr: 'Hollywood Smile işlemim için Türkiye\'yi seçtim. Almanya\'daki fiyatların çok altında, aynı kalite. Kesinlikle tavsiye ederim!', yorum_en: 'Chose Turkey for my Hollywood Smile procedure. Far less than German prices, same quality. Highly recommend!' },
+              { isim: 'Ahmed K.', ulke: '🇸🇦 Suudi Arabistan', puan: 5, yorum_tr: 'LASIK ameliyatı için geldiğimde her şey organize edilmişti. Otel, transfer, klinik — hepsi mükemmeldi. Teşekkürler!', yorum_en: 'When I came for LASIK surgery everything was organized. Hotel, transfer, clinic — all was perfect. Thank you!' },
+              { isim: 'Emma T.', ulke: '🇳🇱 Hollanda', puan: 4, yorum_tr: 'Rinoplasti için Türkiye\'yi tercih ettim. Doktorlar çok profesyoneldi ve iyileşme süreci hızlıydı. Paket fiyatı gerçekten uygundu.', yorum_en: 'Chose Turkey for rhinoplasty. Doctors were very professional and recovery was fast. Package price was really affordable.' },
+              { isim: 'Carlos M.', ulke: '🇪🇸 İspanya', puan: 5, yorum_tr: 'Diş implantı için geldim, Almanya\'da ödeyeceğimin üçte birine yaptırdım. Kalitenin farkı yok. Üstelik İstanbul\'u da gezdim!', yorum_en: 'Got dental implants for a third of the Spanish price. Same quality. Plus I got to visit Istanbul!' },
+              { isim: 'Maria V.', ulke: '🇮🇹 İtalya', puan: 5, yorum_tr: 'Estetik cerrahi için en iyi tercihi yaptım. Her şey çok iyi planlanmıştı, hiçbir sorun yaşamadım. Muhteşem bir deneyimdi!', yorum_en: 'Made the best choice for my aesthetic surgery. Everything was well-planned, no issues at all. Magnificent experience!' },
+              { isim: 'David H.', ulke: '🇺🇸 ABD', puan: 4, yorum_tr: 'Ortopedi tedavisi için İstanbul\'a geldim. Amerika\'daki maliyetle karşılaştırılmaz. HealthTour\'un desteği sayesinde çok rahat bir süreçti.', yorum_en: 'Came to Istanbul for orthopedic treatment. Incomparable to US costs. HealthTour\'s support made the whole process very comfortable.' },
+              { isim: 'Fatima A.', ulke: '🇦🇪 BAE', puan: 5, yorum_tr: 'Onkoloji tedavisi için Türkiye\'ye geldim. Doktorlar dünya standartlarında, klinik son teknolojiye sahip. HealthTour\'a güvenim tamdır.', yorum_en: 'Came to Turkey for oncology treatment. World-class doctors, state-of-the-art clinic. I fully trust HealthTour.' },
+            ].concat([
+              { isim: 'James W.', ulke: '🇬🇧 İngiltere', puan: 5, yorum_tr: 'FUE saç ekimi için İstanbul\'a geldim. Klinik muhteşemdi, sonuçtan çok memnunum. HealthTour süreci baştan sona yönetti.', yorum_en: 'Came to Istanbul for FUE hair transplant. The clinic was excellent and I\'m very happy with the results. HealthTour managed the whole process.' },
+              { isim: 'Sophie L.', ulke: '🇩🇪 Almanya', puan: 5, yorum_tr: 'Hollywood Smile işlemim için Türkiye\'yi seçtim. Almanya\'daki fiyatların çok altında, aynı kalite. Kesinlikle tavsiye ederim!', yorum_en: 'Chose Turkey for my Hollywood Smile procedure. Far less than German prices, same quality. Highly recommend!' },
+              { isim: 'Ahmed K.', ulke: '🇸🇦 Suudi Arabistan', puan: 5, yorum_tr: 'LASIK ameliyatı için geldiğimde her şey organize edilmişti. Otel, transfer, klinik — hepsi mükemmeldi. Teşekkürler!', yorum_en: 'When I came for LASIK surgery everything was organized. Hotel, transfer, clinic — all was perfect. Thank you!' },
+              { isim: 'Emma T.', ulke: '🇳🇱 Hollanda', puan: 4, yorum_tr: 'Rinoplasti için Türkiye\'yi tercih ettim. Doktorlar çok profesyoneldi ve iyileşme süreci hızlıydı. Paket fiyatı gerçekten uygundu.', yorum_en: 'Chose Turkey for rhinoplasty. Doctors were very professional and recovery was fast. Package price was really affordable.' },
+              { isim: 'Carlos M.', ulke: '🇪🇸 İspanya', puan: 5, yorum_tr: 'Diş implantı için geldim, Almanya\'da ödeyeceğimin üçte birine yaptırdım. Kalitenin farkı yok. Üstelik İstanbul\'u da gezdim!', yorum_en: 'Got dental implants for a third of the Spanish price. Same quality. Plus I got to visit Istanbul!' },
+              { isim: 'Maria V.', ulke: '🇮🇹 İtalya', puan: 5, yorum_tr: 'Estetik cerrahi için en iyi tercihi yaptım. Her şey çok iyi planlanmıştı, hiçbir sorun yaşamadım. Muhteşem bir deneyimdi!', yorum_en: 'Made the best choice for my aesthetic surgery. Everything was well-planned, no issues at all. Magnificent experience!' },
+              { isim: 'David H.', ulke: '🇺🇸 ABD', puan: 4, yorum_tr: 'Ortopedi tedavisi için İstanbul\'a geldim. Amerika\'daki maliyetle karşılaştırılmaz. HealthTour\'un desteği sayesinde çok rahat bir süreçti.', yorum_en: 'Came to Istanbul for orthopedic treatment. Incomparable to US costs. HealthTour\'s support made the whole process very comfortable.' },
+              { isim: 'Fatima A.', ulke: '🇦🇪 BAE', puan: 5, yorum_tr: 'Onkoloji tedavisi için Türkiye\'ye geldim. Doktorlar dünya standartlarında, klinik son teknolojiye sahip. HealthTour\'a güvenim tamdır.', yorum_en: 'Came to Turkey for oncology treatment. World-class doctors, state-of-the-art clinic. I fully trust HealthTour.' },
+            ]).map((y, i) => (
+              <div key={i} className="w-80 shrink-0 bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-1 mb-3">
+                  {Array.from({ length: 5 }).map((_, s) => (
+                    <span key={s} className={s < y.puan ? 'text-amber-400' : 'text-gray-200'}>★</span>
+                  ))}
+                </div>
+                <p className="text-gray-600 text-sm leading-relaxed mb-4 italic">
+                  &quot;{tr ? y.yorum_tr : y.yorum_en}&quot;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0f3460] to-blue-400 flex items-center justify-center text-white font-bold text-sm">
+                    {y.isim.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{y.isim}</div>
+                    <div className="text-xs text-gray-400">{y.ulke}</div>
+                  </div>
                 </div>
               </div>
             ))}

@@ -64,6 +64,51 @@ export interface PipelineSonucu {
   };
 }
 
+// ─── RBAC Tipleri ─────────────────────────────────────────────────────────────
+
+export type KullaniciRolu = 'super_admin' | 'clinic_manager' | 'user';
+
+export interface UserRole {
+  id: string;
+  kullanici_id: string;
+  rol: KullaniciRolu;
+  klinik_id: string | null;
+  olusturma_tarihi: string;
+}
+
+export interface ClinicApplication {
+  id: string;
+  kullanici_id: string;
+  klinik_isim: string;
+  iletisim_email: string;
+  uzmanlik: string[];
+  sehir: string;
+  aciklama: string | null;
+  durum: 'pending' | 'approved' | 'rejected';
+  klinik_id: string | null;
+  admin_notu: string | null;
+  olusturma_tarihi: string;
+  guncelleme_tarihi: string;
+}
+
+export interface Ticket {
+  id: string;
+  kullanici_id: string;
+  konu: string;
+  mesaj: string;
+  durum: 'acik' | 'islemde' | 'kapali';
+  admin_yaniti: string | null;
+  olusturma_tarihi: string;
+  guncelleme_tarihi: string;
+}
+
+export interface AdminStats {
+  toplam_kullanici: number;
+  toplam_rezervasyon: number;
+  bekleyen_basvuru: number;
+  acik_bilet: number;
+}
+
 // ─── Ödeme Tipleri ────────────────────────────────────────────────────────────
 
 export interface OdemeSonucu {

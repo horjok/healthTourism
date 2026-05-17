@@ -358,23 +358,25 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — navbarın altından başlar */}
       <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+        className={`fixed inset-x-0 bottom-0 z-40 bg-black/40 transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
+        style={{ top: '64px' }}
         onClick={kapat}
       />
 
-      {/* Sağdan kayan drawer — tüm ekran boyutlarında tutarlı */}
+      {/* Sağdan kayan drawer — navbarın altından başlar */}
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-md z-50 bg-white shadow-2xl flex flex-col
+        className={`fixed right-0 bottom-0 w-full max-w-md z-50 bg-white shadow-2xl flex flex-col
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ top: '64px' }}
       >
         {/* Başlık */}
         <div
-          className="flex items-center justify-between px-6 py-5 shrink-0 sm:rounded-tl-3xl"
+          className="flex items-center justify-between px-6 py-5 shrink-0"
           style={{ background: 'linear-gradient(135deg, #0f3460, #16213e)' }}
         >
           <div>

@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
+import DestekWidget from "@/components/ui/DestekWidget";
 import { DilProvider } from "@/lib/DilContext";
+import { DovizProvider } from "@/lib/DovizContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,8 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="tr">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <DilProvider>
-          <Navbar />
-          {children}
+          <DovizProvider>
+            <Navbar />
+            {children}
+            <DestekWidget />
+          </DovizProvider>
         </DilProvider>
       </body>
     </html>

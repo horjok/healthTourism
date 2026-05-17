@@ -445,6 +445,8 @@ function BookingInner() {
         {adim === 3 && (
           <MockOdemeFormu
             tutar={grand}
+            tarih={tarih}
+            items={items}
             onSuccess={(islemId) => {
               clearCart();
               router.push(`/booking/success?id=${encodeURIComponent(islemId)}`);

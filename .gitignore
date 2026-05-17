@@ -37,3 +37,12 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+ozet3.md
+ozet2.md
+ozet1.md
+ozet.md
+
+# Claude Code tooling
+.claude/
+ozet*.md
+healthtour_frontend_ozet.md
