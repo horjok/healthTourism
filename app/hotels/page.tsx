@@ -66,7 +66,7 @@ export default function HotelsPage() {
     const n = getNights(h.id);
     addItem({
       id: `hotel-${h.id}`,
-      type: 'package',
+      type: 'hotel',
       name: h.name,
       detail: `${h.city} · ${h.stars}★ · ${n} ${tr ? 'gece' : 'nights'} · ${formatla(h.price_per_night)}/${tr ? 'gece' : 'night'}`,
       unitPrice: h.price_per_night * n,

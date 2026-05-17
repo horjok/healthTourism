@@ -1,15 +1,16 @@
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { createSupabaseForRoute, getTumRezervasyonlar } from '@/lib/supabase';
+import { requireRole } from '@/lib/auth-guard';
+import { createAdminClient } from '@/lib/supabase-clients';
+import { getTumRezervasyonlar } from '@/lib/supabase';
+import { ok, fail } from '@/lib/api-response';
 
 export async function GET() {
+  const guard = await requireRole(['super_admin']);
+  if ('error' in guard) return guard.error;
+
   try {
-    const cookieStore = await cookies();
-    const sb = createSupabaseForRoute(cookieStore);
-    const data = await getTumRezervasyonlar(sb);
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Rezervasyonlar alınamadı', detay: mesaj }, { status: 500 });
+    const data = await getTumRezervasyonlar(createAdminClient());
+    return ok(data);
+  } catch (e) {
+    return fail('Rezervasyonlar alınamadı', e);
   }
 }

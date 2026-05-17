@@ -1,16 +1,11 @@
 import { getKlinikById } from '@/lib/supabase';
+import { ok, err } from '@/lib/api-response';
 
-export async function GET(
-  _: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     const data = await getKlinikById(params.id);
-    return Response.json({ success: true, data });
+    return ok(data);
   } catch {
-    return Response.json(
-      { success: false, error: 'Klinik bulunamadı' },
-      { status: 404 }
-    );
+    return err('Klinik bulunamadı', 404);
   }
 }

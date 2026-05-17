@@ -155,9 +155,7 @@ const LINKLER = [
               </Link>
             )}
 
-            {!yuklendi ? (
-              <div className="w-20 h-8 bg-gray-100 rounded-xl animate-pulse" />
-            ) : kullanici ? (
+            {yuklendi && kullanici ? (
               <>
                 {rol === 'super_admin' && (
                   <Link href="/admin"

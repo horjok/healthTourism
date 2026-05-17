@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type CartItemType = 'flight' | 'package' | 'transfer' | 'tour';
+export type CartItemType = 'flight' | 'package' | 'transfer' | 'tour' | 'hotel' | 'health';
 
 export type CartItem = {
   id: string;

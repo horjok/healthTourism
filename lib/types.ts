@@ -23,15 +23,36 @@ export interface Paket {
   aciklama: string;
 }
 
+export interface ErisilebilirlikBilgisi {
+  gerekli: boolean;
+  fiziksel: string[];
+  zihinsel: string[];
+  tibbi: string[];
+  hamileyse_hafta?: string;
+  diger_aciklama?: string;
+  ek_not?: string;
+  acil_ad?: string;
+  acil_telefon?: string;
+  acil_iliski?: string;
+}
+
+export type RezervasyonItemTipi = 'package' | 'flight' | 'transfer' | 'tour' | 'hotel' | 'health';
+
 export interface Rezervasyon {
   id: string;
   kullanici_id: string;
-  paket: Paket;
+  paket: Paket | null;
+  paket_id?: string | null;
+  item_tipi?: RezervasyonItemTipi;
+  item_isim?: string | null;
+  item_fiyat?: number | null;
+  grup_kodu?: string | null;
   tarih: string;
   durum: 'beklemede' | 'onaylandi' | 'tamamlandi' | 'iptal';
   olusturma_tarihi: string;
   takip_kodu?: string;
   sepet_ozeti?: Record<string, unknown>[] | null;
+  erisilebilirlik?: ErisilebilirlikBilgisi | null;
 }
 
 export interface KullaniciProfil {

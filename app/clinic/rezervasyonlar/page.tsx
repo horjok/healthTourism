@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase-client';
-import type { Rezervasyon } from '@/lib/types';
+import type { ErisilebilirlikBilgisi, Rezervasyon } from '@/lib/types';
 
 type Durum = Rezervasyon['durum'];
 
@@ -27,6 +27,41 @@ const GECIS_KURALLARI: Record<Durum, Durum[]> = {
   tamamlandi: [],
   iptal:      [],
 };
+
+// Tooltip: erisilebilirlik detayı için basit hover kutusu
+function ErisilebilirlikHucresi({ veri }: { veri: ErisilebilirlikBilgisi | null | undefined }) {
+  const [acik, setAcik] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  if (!veri?.gerekli) return <span className="text-gray-300 text-xs">—</span>;
+
+  const etiketler = [...veri.fiziksel, ...veri.zihinsel, ...veri.tibbi];
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        onMouseEnter={() => setAcik(true)}
+        onMouseLeave={() => setAcik(false)}
+        className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-lg font-semibold whitespace-nowrap"
+      >
+        ♿ {etiketler.length} not
+      </button>
+      {acik && (
+        <div className="absolute left-0 top-7 z-30 w-52 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-xs space-y-1">
+          {etiketler.map((t) => (
+            <span key={t} className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mr-1 mb-1">{t}</span>
+          ))}
+          {veri.ek_not && <p className="text-gray-500 italic pt-1 border-t border-gray-100">{veri.ek_not}</p>}
+          {veri.acil_ad && (
+            <p className="text-gray-600 pt-1 border-t border-gray-100">
+              🚨 {veri.acil_ad} · {veri.acil_telefon}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ClinicRezervasyonlar() {
   const router = useRouter();
@@ -130,7 +165,7 @@ export default function ClinicRezervasyonlar() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              {['Müşteri', 'Paket', 'Takip Kodu', 'Tarih', 'Durum', 'İşlem'].map((h) => (
+              {['Müşteri', 'Paket / Hizmet', 'Takip Kodu', 'Tarih', 'Erişilebilirlik', 'Durum', 'İşlem'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
@@ -138,13 +173,13 @@ export default function ClinicRezervasyonlar() {
           <tbody className="divide-y divide-gray-50">
             {gorunen.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-gray-400 text-sm">
+                <td colSpan={7} className="px-4 py-10 text-center text-gray-400 text-sm">
                   {filtre === 'tumu' ? 'Rezervasyon yok' : `${DURUM_LABEL[filtre as Durum]} rezervasyon yok`}
                 </td>
               </tr>
             ) : gorunen.map((r) => {
               const gecisler = GECIS_KURALLARI[r.durum];
-              const islemde = guncelleniyor === r.id;
+              const islemde  = guncelleniyor === r.id;
 
               return (
                 <tr key={r.id} className="hover:bg-gray-50 transition-colors">
@@ -160,29 +195,35 @@ export default function ClinicRezervasyonlar() {
                     </div>
                   </td>
 
-                  {/* Paket */}
+                  {/* Paket / Hizmet */}
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900 line-clamp-1 max-w-[180px]">
-                      {r.paket?.baslik ?? '—'}
+                      {r.item_isim ?? r.paket?.baslik ?? '—'}
                     </p>
-                    {r.paket?.sure_gun && (
-                      <p className="text-xs text-gray-400">{r.paket.sure_gun} gün</p>
-                    )}
+                    <p className="text-xs text-gray-400">
+                      {r.item_tipi ?? 'package'}{r.paket?.sure_gun ? ` · ${r.paket.sure_gun} gün` : ''}
+                    </p>
                   </td>
 
-                  {/* Takip Kodu / PNR */}
+                  {/* Takip Kodu */}
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-lg">
                       {r.takip_kodu ?? '—'}
                     </span>
+                    {r.grup_kodu && r.grup_kodu !== r.takip_kodu && (
+                      <p className="text-[10px] text-gray-400 mt-0.5 font-mono">grp: {r.grup_kodu}</p>
+                    )}
                   </td>
 
                   {/* Tarih */}
                   <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                     <p>{r.tarih}</p>
-                    <p className="text-gray-400">
-                      {new Date(r.olusturma_tarihi).toLocaleDateString('tr-TR')}
-                    </p>
+                    <p className="text-gray-400">{new Date(r.olusturma_tarihi).toLocaleDateString('tr-TR')}</p>
+                  </td>
+
+                  {/* Erişilebilirlik */}
+                  <td className="px-4 py-3">
+                    <ErisilebilirlikHucresi veri={r.erisilebilirlik} />
                   </td>
 
                   {/* Durum */}

@@ -3,6 +3,9 @@ import { cikarimYap, sentezYaz } from '@/lib/gemini';
 import { enIyiPaketleriBul } from '@/lib/recommend';
 import type { ChatIstegi, PipelineSonucu } from '@/lib/types';
 
+// Tüm pipeline için üst sınır — bireysel agent timeout (15s × 2) + işlem tamponu
+const PIPELINE_TIMEOUT_MS = 35_000;
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ChatIstegi;
@@ -11,6 +14,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Mesaj boş olamaz' },
         { status: 400 }
+      );
+    }
+
+    // Tüm pipeline için AbortController — Vercel 504 yerine kendi 504'ümüzü göndeririz
+    const controller = new AbortController();
+    const pipelineTimeout = setTimeout(() => controller.abort(), PIPELINE_TIMEOUT_MS);
+
+    if (controller.signal.aborted) {
+      return NextResponse.json(
+        { success: false, error: 'Analiz zaman aşımına uğradı, lütfen tekrar deneyin' },
+        { status: 504 }
       );
     }
 
@@ -67,16 +81,23 @@ export async function POST(req: NextRequest) {
       },
     };
 
+    clearTimeout(pipelineTimeout);
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    const isTimeout =
+      error instanceof Error &&
+      (error.name === 'AbortError' || error.message.includes('zaman aşımına'));
+
     const detay = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Analiz yapılamıyor, lütfen tekrar deneyin',
+        error: isTimeout
+          ? 'Analiz zaman aşımına uğradı, lütfen tekrar deneyin'
+          : 'Analiz yapılamıyor, lütfen tekrar deneyin',
         ...(process.env.NODE_ENV === 'development' && { detay }),
       },
-      { status: 500 }
+      { status: isTimeout ? 504 : 500 }
     );
   }
 }

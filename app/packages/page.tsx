@@ -73,13 +73,13 @@ function PaketKarti({
   onUzmanlikSec: (u: string) => void;
 }) {
   const { formatla } = useDoviz();
-  const { addItem, items } = useCartStore();
+  const { addItem, items, incrementQuantity, decrementQuantity, removeItem } = useCartStore();
   const { dil } = useDilContext();
   const { isKlinikYoneticisi } = useKullaniciContext();
   const tr = dil === 'tr';
-  const [eklendi, setEklendi] = useState(false);
 
-  const sepette = items.some((i) => i.id === paket.id);
+  const sepetItem = items.find((i) => i.id === paket.id);
+  const adet = sepetItem?.quantity ?? 0;
 
   function sepeteEkle() {
     addItem({
@@ -90,8 +90,6 @@ function PaketKarti({
       unitPrice: paket.toplam_fiyat,
       quantity: 1,
     });
-    setEklendi(true);
-    setTimeout(() => setEklendi(false), 2000);
   }
 
   return (
@@ -162,20 +160,50 @@ function PaketKarti({
             {tr ? 'İncele' : 'View'}
           </Link>
           {!isKlinikYoneticisi && (
-            <button
-              type="button"
-              onClick={sepeteEkle}
-              className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${eklendi || sepette
-                  ? 'bg-green-500 text-white'
-                  : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
-                }`}
-            >
-              {eklendi
-                ? `✓ ${tr ? 'Eklendi' : 'Added'}`
-                : sepette
-                  ? `✓ ${tr ? 'Sepette' : 'In Cart'}`
-                  : `+ ${tr ? 'Sepete Ekle' : 'Add to Cart'}`}
-            </button>
+            adet === 0 ? (
+              <button
+                type="button"
+                onClick={sepeteEkle}
+                className="px-3 py-2 text-sm font-semibold rounded-xl bg-[#0f3460] text-white hover:bg-[#16213e] transition-colors"
+              >
+                + {tr ? 'Sepete Ekle' : 'Add to Cart'}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                {/* Miktar kontrolü */}
+                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => (adet > 1 ? decrementQuantity(paket.id) : removeItem(paket.id))}
+                    title={tr ? 'Azalt' : 'Decrease'}
+                    aria-label={tr ? 'Azalt' : 'Decrease'}
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    −
+                  </button>
+                  <span className="px-2 min-w-[28px] text-center text-sm font-bold text-[#0f3460] tabular-nums">{adet}</span>
+                  <button
+                    type="button"
+                    onClick={() => incrementQuantity(paket.id)}
+                    title={tr ? 'Arttır' : 'Increase'}
+                    aria-label={tr ? 'Arttır' : 'Increase'}
+                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                {/* İptal */}
+                <button
+                  type="button"
+                  onClick={() => removeItem(paket.id)}
+                  title={tr ? 'Sepetten çıkar' : 'Remove from cart'}
+                  aria-label={tr ? 'Sepetten çıkar' : 'Remove from cart'}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>

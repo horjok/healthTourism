@@ -1,6 +1,6 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createSupabaseForRoute, getClinicStats, getRezervasyonlarByKlinik } from '@/lib/supabase';
+import { createServerSupabase, createAdminClient } from '@/lib/supabase-clients';
+import { getClinicStats, getRezervasyonlarByKlinik } from '@/lib/supabase';
 
 const DURUM_RENK: Record<string, string> = {
   beklemede:  'bg-amber-100 text-amber-700',
@@ -44,17 +44,18 @@ function MetrikKart({
 }
 
 export default async function ClinicDashboard() {
-  const cookieStore = cookies();
-  const sb = createSupabaseForRoute(cookieStore);
+  const sb = await createServerSupabase();
 
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect('/auth');
 
-  const { data: roleRow } = await sb
+  // Rol satırı admin client ile (RLS bypass) — kullanıcı kendi rolünü göremeyebilir
+  const admin = createAdminClient();
+  const { data: roleRow } = await admin
     .from('user_roles')
     .select('klinik_id')
     .eq('kullanici_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!roleRow?.klinik_id) {
     return (
@@ -71,9 +72,9 @@ export default async function ClinicDashboard() {
   const klinik_id = roleRow.klinik_id as string;
 
   const [stats, rezervasyonlar, { data: klinik }] = await Promise.all([
-    getClinicStats(klinik_id, sb),
-    getRezervasyonlarByKlinik(klinik_id),
-    sb.from('klinikler').select('isim, sehir').eq('id', klinik_id).single(),
+    getClinicStats(klinik_id, admin),
+    getRezervasyonlarByKlinik(klinik_id, admin),
+    admin.from('klinikler').select('isim, sehir').eq('id', klinik_id).single(),
   ]);
 
   const sonBes = rezervasyonlar.slice(0, 5);

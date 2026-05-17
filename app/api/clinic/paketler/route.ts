@@ -1,31 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { requireRole } from '@/lib/auth-guard';
+import { createAdminClient } from '@/lib/supabase-clients';
 import { createPaket, getPaketlerByKlinik } from '@/lib/supabase';
+import { ok, err, fail } from '@/lib/api-response';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
+  const guard = await requireRole(['clinic_manager']);
+  if ('error' in guard) return guard.error;
+  const { klinik_id } = guard.ctx;
+  if (!klinik_id) return err('Klinik atanmamış', 403);
+
   try {
-    const klinik_id = new URL(req.url).searchParams.get('klinik_id');
-    if (!klinik_id) {
-      return NextResponse.json({ success: false, error: 'klinik_id zorunlu' }, { status: 400 });
-    }
-
-    const data = await getPaketlerByKlinik(klinik_id);
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Paketler alınamadı', detay: mesaj }, { status: 500 });
+    const data = await getPaketlerByKlinik(klinik_id, createAdminClient());
+    return ok(data);
+  } catch (e) {
+    return fail('Paketler alınamadı', e);
   }
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole(['clinic_manager']);
+  if ('error' in guard) return guard.error;
+  const { klinik_id } = guard.ctx;
+  if (!klinik_id) return err('Klinik atanmamış', 403);
+
   try {
     const body = await req.json();
-
-    if (!body.klinik_id || !body.baslik || !body.toplam_fiyat || !body.sure_gun) {
-      return NextResponse.json({ success: false, error: 'Zorunlu alanlar eksik' }, { status: 400 });
+    if (!body.baslik || !body.toplam_fiyat || !body.sure_gun) {
+      return err('Zorunlu alanlar eksik', 400);
     }
 
+    // klinik_id daima ctx'ten — body'den GEÇİRİLEMEZ (cross-tenant yazımı engeller)
     const data = await createPaket({
-      klinik_id: body.klinik_id,
+      klinik_id,
       baslik: body.baslik,
       otel_isim: body.otel_isim ?? '',
       otel_dahil: body.otel_dahil ?? false,
@@ -35,11 +42,10 @@ export async function POST(req: NextRequest) {
       toplam_fiyat: Number(body.toplam_fiyat),
       sure_gun: Number(body.sure_gun),
       aciklama: body.aciklama ?? '',
-    });
+    }, createAdminClient());
 
-    return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Paket oluşturulamadı', detay: mesaj }, { status: 500 });
+    return ok(data, 201);
+  } catch (e) {
+    return fail('Paket oluşturulamadı', e);
   }
 }

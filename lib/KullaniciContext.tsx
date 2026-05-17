@@ -35,25 +35,28 @@ export function KullaniciProvider({ children }: { children: React.ReactNode }) {
           .from('user_roles')
           .select('rol')
           .eq('kullanici_id', data.user.id)
-          .single();
+          .maybeSingle();
         setRol((roleRow?.rol as KullaniciRolTipi) ?? 'user');
       }
       setYuklendi(true);
     }).catch(() => setYuklendi(true));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setKullanici(session?.user ?? null);
-      if (session?.user) {
-        const { data: roleRow } = await supabase
-          .from('user_roles')
-          .select('rol')
-          .eq('kullanici_id', session.user.id)
-          .single();
-        setRol((roleRow?.rol as KullaniciRolTipi) ?? 'user');
-      } else {
-        setRol('user');
+      try {
+        setKullanici(session?.user ?? null);
+        if (session?.user) {
+          const { data: roleRow } = await supabase
+            .from('user_roles')
+            .select('rol')
+            .eq('kullanici_id', session.user.id)
+            .maybeSingle();
+          setRol((roleRow?.rol as KullaniciRolTipi) ?? 'user');
+        } else {
+          setRol('user');
+        }
+      } finally {
+        setYuklendi(true);
       }
-      setYuklendi(true);
     });
 
     return () => subscription.unsubscribe();

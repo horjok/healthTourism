@@ -32,7 +32,7 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
       setRol(roleRow?.rol ?? 'user');
 
       if (roleRow?.rol !== 'clinic_manager') {
-        const res = await fetch(`/api/clinic/application?kullanici_id=${user.id}`);
+        const res = await fetch('/api/clinic/application');
         const json = await res.json();
         if (json.success && json.data) setBasvuru(json.data);
       }

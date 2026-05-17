@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { processMockPayment } from '@/lib/mock-payment';
 import type { CartItem } from '@/lib/cartStore';
+import type { ErisilebilirlikBilgisi } from '@/lib/types';
 
 interface MockOdemeFormuProps {
   tutar: number;
   tarih: string;
   items: CartItem[];
+  erisilebilirlik?: ErisilebilirlikBilgisi | null;
   onSuccess: (islemId: string) => void;
   onError: () => void;
 }
@@ -49,7 +51,7 @@ async function konfetiFirlat() {
   }, 300);
 }
 
-export default function MockOdemeFormu({ tutar, tarih, items, onSuccess, onError }: MockOdemeFormuProps) {
+export default function MockOdemeFormu({ tutar, tarih, items, erisilebilirlik, onSuccess, onError }: MockOdemeFormuProps) {
   const [kartAdi, setKartAdi]         = useState('');
   const [kartNo, setKartNo]           = useState('');
   const [sonKullanma, setSonKullanma] = useState('');
@@ -70,7 +72,7 @@ export default function MockOdemeFormu({ tutar, tarih, items, onSuccess, onError
       await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, tarih, islem_id: sonuc.islem_id }),
+        body: JSON.stringify({ items, tarih, islem_id: sonuc.islem_id, erisilebilirlik: erisilebilirlik ?? null }),
       });
 
       // 3 — Konfeti + kısa animasyon süresi
@@ -123,7 +125,11 @@ export default function MockOdemeFormu({ tutar, tarih, items, onSuccess, onError
             value={kartAdi}
             maxLength={60}
             disabled={isleniyor}
-            onChange={(e) => setKartAdi(e.target.value.toLocaleUpperCase('tr-TR'))}
+            onChange={(e) => {
+              // Sadece harf ve boşluk (TR karakterleri dahil), büyük harfe çevir
+              const sadeceHarf = e.target.value.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ\s\-]/g, '');
+              setKartAdi(sadeceHarf.toLocaleUpperCase('tr-TR'));
+            }}
             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 focus:border-[#0f3460] uppercase disabled:opacity-50 disabled:bg-gray-50"
           />
         </div>

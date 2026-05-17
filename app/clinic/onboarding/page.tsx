@@ -12,7 +12,6 @@ const UZMANLIK_SECENEKLERI = [
 
 export default function ClinicOnboarding() {
   const router = useRouter();
-  const [kullaniciId, setKullaniciId] = useState('');
   const [email, setEmail]             = useState('');
   const [mevcutBasvuru, setMevcutBasvuru] = useState<ClinicApplication | null>(null);
   const [yukleniyor, setYukleniyor]   = useState(true);
@@ -28,7 +27,6 @@ export default function ClinicOnboarding() {
     const supabase = getSupabaseClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/auth'); return; }
-      setKullaniciId(user.id);
       setEmail(user.email ?? '');
 
       // Zaten clinic_manager ise dashboard'a yönlendir
@@ -44,7 +42,7 @@ export default function ClinicOnboarding() {
       }
 
       // Mevcut başvuru var mı?
-      const res = await fetch(`/api/clinic/application?kullanici_id=${user.id}`);
+      const res = await fetch('/api/clinic/application');
       const json = await res.json();
       if (json.success && json.data) setMevcutBasvuru(json.data);
       setYukleniyor(false);
@@ -69,7 +67,6 @@ export default function ClinicOnboarding() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        kullanici_id: kullaniciId,
         klinik_isim: isim,
         iletisim_email: email,
         uzmanlik,

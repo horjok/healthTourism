@@ -103,7 +103,7 @@ export default function HealthPage() {
     if (!selectedOp || !selectedClinic) return;
     addItem({
       id:        `health-${selectedOp.id}-${selectedClinic.id}`,
-      type:      'package',
+      type:      'health',
       name:      `${tr ? selectedOp.name_tr : selectedOp.name_en} — ${selectedClinic.name}`,
       detail:    `${selectedClinic.city} · ${tr ? selectedOp.duration_tr : selectedOp.duration_en}${complaint ? ' · ' + complaint.slice(0, 40) : ''}`,
       unitPrice: selectedOp.price_from,

@@ -1,25 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { requireAuth } from '@/lib/auth-guard';
+import { createServerSupabase } from '@/lib/supabase-clients';
 import { createClinicApplication, getClinicApplication } from '@/lib/supabase';
+import { ok, err, fail } from '@/lib/api-response';
 
-export async function GET(req: NextRequest) {
+// kullanici_id daima oturumdan alınır — başkasının başvurusu görüntülenemez/oluşturulamaz.
+export async function GET() {
+  const guard = await requireAuth();
+  if ('error' in guard) return guard.error;
+
   try {
-    const kullanici_id = new URL(req.url).searchParams.get('kullanici_id');
-    if (!kullanici_id) {
-      return NextResponse.json({ success: false, error: 'kullanici_id zorunlu' }, { status: 400 });
-    }
-
-    const data = await getClinicApplication(kullanici_id);
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Başvuru bilgisi alınamadı', detay: mesaj }, { status: 500 });
+    const sb = await createServerSupabase();
+    const data = await getClinicApplication(guard.ctx.userId, sb);
+    return ok(data);
+  } catch (e) {
+    return fail('Başvuru bilgisi alınamadı', e);
   }
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireAuth();
+  if ('error' in guard) return guard.error;
+
   try {
     const body = await req.json() as {
-      kullanici_id: string;
       klinik_isim: string;
       iletisim_email: string;
       uzmanlik: string[];
@@ -27,22 +31,22 @@ export async function POST(req: NextRequest) {
       aciklama?: string;
     };
 
-    if (!body.kullanici_id || !body.klinik_isim || !body.iletisim_email || !body.uzmanlik?.length || !body.sehir) {
-      return NextResponse.json({ success: false, error: 'Zorunlu alanlar eksik' }, { status: 400 });
+    if (!body.klinik_isim || !body.iletisim_email || !body.uzmanlik?.length || !body.sehir) {
+      return err('Zorunlu alanlar eksik', 400);
     }
 
+    const sb = await createServerSupabase();
     const data = await createClinicApplication({
-      kullanici_id: body.kullanici_id,
+      kullanici_id: guard.ctx.userId, // body'den DEĞİL, oturumdan
       klinik_isim: body.klinik_isim,
       iletisim_email: body.iletisim_email,
       uzmanlik: body.uzmanlik,
       sehir: body.sehir,
       aciklama: body.aciklama ?? null,
-    });
+    }, sb);
 
-    return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Başvuru oluşturulamadı', detay: mesaj }, { status: 500 });
+    return ok(data, 201);
+  } catch (e) {
+    return fail('Başvuru oluşturulamadı', e);
   }
 }

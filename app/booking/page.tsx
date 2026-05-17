@@ -27,7 +27,15 @@ function BookingInner() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
   const router = useRouter();
-  const { items, passengers, totalPrice, clearCart } = useCartStore();
+  const { items, passengers, totalPrice, clearCart, removeItem } = useCartStore();
+
+  // Bugün ve bugün+3 yıl (ISO yyyy-mm-dd)
+  const bugunIso = new Date().toISOString().split('T')[0];
+  const maxTarihIso = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 3);
+    return d.toISOString().split('T')[0];
+  })();
 
   const [adim, setAdim] = useState<Adim>(1);
   const [adSoyad, setAdSoyad] = useState('');
@@ -173,6 +181,15 @@ function BookingInner() {
                       <div className="text-sm font-extrabold text-[#0f3460]">${item.lineTotal}</div>
                       <div className="text-xs text-gray-400">×{item.quantity}</div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      title={tr ? 'Sepetten çıkar' : 'Remove from cart'}
+                      aria-label={tr ? 'Sepetten çıkar' : 'Remove from cart'}
+                      className="ml-2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ))}
               </div>
@@ -244,11 +261,20 @@ function BookingInner() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">
-                  {tr ? 'Tercih Tarihi *' : 'Preferred Date *'}
+                  {tr ? 'Gidiş Tarihi *' : 'Departure Date *'}
                 </label>
                 <input type="date" value={tarih}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={e => { setTarih(e.target.value); setTarihHata(''); }}
+                  min={bugunIso}
+                  max={maxTarihIso}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v && (v < bugunIso || v > maxTarihIso)) {
+                      setTarihHata(tr ? 'Tarih bugün ile 3 yıl sonrası arasında olmalı' : 'Date must be between today and 3 years from now');
+                      return;
+                    }
+                    setTarih(v);
+                    setTarihHata('');
+                  }}
                   className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-white ${tarihHata ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:ring-[#0f3460]/30'}`} />
                 {tarihHata && <p className="mt-1 text-xs text-red-600">{tarihHata}</p>}
               </div>
@@ -405,11 +431,21 @@ function BookingInner() {
                       <div className="space-y-3">
                         <input type="text" placeholder={tr ? 'Ad Soyad' : 'Full Name'}
                           value={assistanceData.acil_ad}
-                          onChange={e => setAssistanceData({ ...assistanceData, acil_ad: e.target.value })}
+                          maxLength={60}
+                          onChange={e => {
+                            // Sadece harf ve boşluk (TR karakterleri dahil)
+                            const sadeceHarf = e.target.value.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ\s\-]/g, '');
+                            setAssistanceData({ ...assistanceData, acil_ad: sadeceHarf });
+                          }}
                           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
                         <input type="tel" placeholder={tr ? 'Telefon' : 'Phone'}
                           value={assistanceData.acil_telefon}
-                          onChange={e => setAssistanceData({ ...assistanceData, acil_telefon: e.target.value })}
+                          inputMode="numeric"
+                          onChange={e => {
+                            // Sadece rakam, maksimum 15 rakam (E.164 üst sınır)
+                            const sadeceRakam = e.target.value.replace(/\D/g, '').slice(0, 15);
+                            setAssistanceData({ ...assistanceData, acil_telefon: sadeceRakam });
+                          }}
                           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
                         <select value={assistanceData.acil_iliski}
                           onChange={e => setAssistanceData({ ...assistanceData, acil_iliski: e.target.value })}
@@ -447,6 +483,7 @@ function BookingInner() {
             tutar={grand}
             tarih={tarih}
             items={items}
+            erisilebilirlik={assistanceData.gerekli ? assistanceData : null}
             onSuccess={(islemId) => {
               clearCart();
               router.push(`/booking/success?id=${encodeURIComponent(islemId)}`);

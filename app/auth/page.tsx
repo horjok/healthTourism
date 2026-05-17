@@ -51,7 +51,6 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
         if (error) { setHata(hataMesaji(`${error.code ?? ''} ${error.message}`)); return; }
         router.push('/');
-        router.refresh();
 
       } else {
         // ── Kayıt ──────────────────────────────────────────────────────────

@@ -1,21 +1,26 @@
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseForRoute, getClinicApplications, updateClinicApplication } from '@/lib/supabase';
+import { NextRequest } from 'next/server';
+import { requireRole } from '@/lib/auth-guard';
+import { createAdminClient } from '@/lib/supabase-clients';
+import { getClinicApplications, updateClinicApplication } from '@/lib/supabase';
+import { ok, err, fail } from '@/lib/api-response';
 
 export async function GET(req: NextRequest) {
+  const guard = await requireRole(['super_admin']);
+  if ('error' in guard) return guard.error;
+
   try {
     const durum = new URL(req.url).searchParams.get('durum') ?? undefined;
-    const cookieStore = await cookies();
-    const sb = createSupabaseForRoute(cookieStore);
-    const data = await getClinicApplications(durum, sb);
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Başvurular alınamadı', detay: mesaj }, { status: 500 });
+    const data = await getClinicApplications(durum, createAdminClient());
+    return ok(data);
+  } catch (e) {
+    return fail('Başvurular alınamadı', e);
   }
 }
 
 export async function PATCH(req: NextRequest) {
+  const guard = await requireRole(['super_admin']);
+  if ('error' in guard) return guard.error;
+
   try {
     const body = await req.json() as {
       id: string;
@@ -24,25 +29,19 @@ export async function PATCH(req: NextRequest) {
       klinik_id?: string;
     };
 
-    if (!body.id || !body.durum) {
-      return NextResponse.json({ success: false, error: 'id ve durum zorunlu' }, { status: 400 });
-    }
-
+    if (!body.id || !body.durum) return err('id ve durum zorunlu', 400);
     if (body.durum === 'approved' && !body.klinik_id) {
-      return NextResponse.json({ success: false, error: 'Onaylama için klinik_id zorunlu' }, { status: 400 });
+      return err('Onaylama için klinik_id zorunlu', 400);
     }
 
-    const cookieStore = await cookies();
-    const sb = createSupabaseForRoute(cookieStore);
     const data = await updateClinicApplication(body.id, {
       durum: body.durum,
       admin_notu: body.admin_notu,
       klinik_id: body.klinik_id,
-    }, sb);
+    }, createAdminClient());
 
-    return NextResponse.json({ success: true, data });
-  } catch (error) {
-    const mesaj = error instanceof Error ? error.message : 'Bilinmeyen hata';
-    return NextResponse.json({ success: false, error: 'Başvuru güncellenemedi', detay: mesaj }, { status: 500 });
+    return ok(data);
+  } catch (e) {
+    return fail('Başvuru güncellenemedi', e);
   }
 }
