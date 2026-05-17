@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
-import DestekWidget from "@/components/ui/DestekWidget";
+import ChatProvider from "@/components/ui/ChatProvider";
 import { DilProvider } from "@/lib/DilContext";
 import { DovizProvider } from "@/lib/DovizContext";
 
@@ -29,9 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <DilProvider>
           <DovizProvider>
-            <Navbar />
-            {children}
-            <DestekWidget />
+            <ChatProvider>
+              <Navbar />
+              {children}
+            </ChatProvider>
           </DovizProvider>
         </DilProvider>
       </body>

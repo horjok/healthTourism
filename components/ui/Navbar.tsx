@@ -8,6 +8,7 @@ import { getSupabaseClient } from '@/lib/supabase-client';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz, type Para } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useChatContext } from '@/components/ui/ChatProvider';
 
 function CartBadge() {
   const [mounted, setMounted] = useState(false);
@@ -37,6 +38,8 @@ export default function Navbar() {
     { kod: 'TRY', etiket: '₺ TRY' },
   ];
 
+  const { setChatAcik } = useChatContext();
+
   const [menuAcik, setMenuAcik] = useState(false);
   const [kullanici, setKullanici] = useState<User | null>(null);
   const [yuklendi, setYuklendi] = useState(false);
@@ -48,7 +51,6 @@ const LINKLER = [
   { etiket: tr ? 'Uçuşlar' : 'Flights', href: '/flights' },
   { etiket: tr ? 'Transfer' : 'Transfer', href: '/transfer' },
   { etiket: tr ? 'Turlar' : 'Tours', href: '/tours' },
-  { etiket: tr ? 'AI Öneri' : 'AI Suggestion', href: '/packages?chat=true' },
 ];
 
   useEffect(() => {
@@ -143,6 +145,12 @@ const LINKLER = [
                 {link.etiket}
               </Link>
             ))}
+            <button
+              onClick={() => setChatAcik(true)}
+              className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-gradient-to-r from-[#0f3460] to-blue-500 text-white hover:opacity-90"
+            >
+              {tr ? '✨ AI Öneri' : '✨ AI Suggestion'}
+            </button>
           </div>
 
           {/* Sağ alan (masaüstü) */}
@@ -215,6 +223,12 @@ const LINKLER = [
                 {link.etiket}
               </Link>
             ))}
+            <button
+              onClick={() => { setChatAcik(true); setMenuAcik(false); }}
+              className="text-left px-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#0f3460] to-blue-500 text-white"
+            >
+              {tr ? '✨ AI Öneri' : '✨ AI Suggestion'}
+            </button>
 
             <div className="border-t border-gray-100 mt-1 pt-2">
               {kullanici ? (

@@ -45,6 +45,14 @@ export interface ChatIstegi {
   tarih?: string;
 }
 
+// Agent 1 çıktısı — deterministik algoritmaya girdi
+export interface CikarimSonucu {
+  uzmanlik: string;
+  maxButce: number | null;
+  sehir: string | null;
+  kapsamDisi?: true; // platform konusu dışında sorgu
+}
+
 export interface PaketOnerisi {
   klinik_isim: string;
   tahmini_fiyat: string;

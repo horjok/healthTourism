@@ -4,9 +4,9 @@ import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Paket } from '@/lib/types';
-import ChatEkrani from '@/components/chat/ChatEkrani';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useChatContext } from '@/components/ui/ChatProvider';
 
 // ─── Uzmanlık rozet renkleri ──────────────────────────────────────────────────
 
@@ -333,6 +333,7 @@ function FiltrePanel({
 
 function PackagesInner() {
   const searchParams = useSearchParams();
+  const { setChatAcik } = useChatContext();
   const router       = useRouter();
 
   function urldenFiltre(): FiltreState {
@@ -347,14 +348,11 @@ function PackagesInner() {
     };
   }
 
-  const urlChat = searchParams.get('chat') === 'true';
-
   const [filtreler, setFiltreler]     = useState<FiltreState>(urldenFiltre);
   const [paketler, setPaketler]       = useState<Paket[]>([]);
   const [tumPaketler, setTumPaketler] = useState<Paket[]>([]);
   const [yukleniyor, setYukleniyor]   = useState(true);
   const [hata, setHata]               = useState(false);
-  const [chatAcik, setChatAcik]       = useState(urlChat);
 
   // Filtre seçenekleri için tüm paketleri bir kez çek
   useEffect(() => {
@@ -378,8 +376,6 @@ function PackagesInner() {
     tumPaketler.forEach((p) => set.add(p.klinik.sehir));
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'));
   }, [tumPaketler]);
-
-  useEffect(() => { if (urlChat) setChatAcik(true); }, [urlChat]);
 
   function apiFetch(f: FiltreState) {
     setYukleniyor(true);
@@ -410,7 +406,7 @@ function PackagesInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString()]);
 
-  function urlGuncelle(f: FiltreState, chat = chatAcik) {
+  function urlGuncelle(f: FiltreState) {
     const p = new URLSearchParams();
     if (f.uzmanlik)  p.set('uzmanlik',   f.uzmanlik);
     if (f.maxFiyat)  p.set('max_fiyat',  f.maxFiyat);
@@ -419,7 +415,6 @@ function PackagesInner() {
     if (f.otelDahil) p.set('otel_dahil', 'true');
     if (f.akredite)  p.set('akredite',   'true');
     if (f.minPuan)   p.set('min_puan',   f.minPuan);
-    if (chat)        p.set('chat',        'true');
     router.replace(`/packages${p.size ? '?' + p.toString() : ''}`, { scroll: false });
   }
 
@@ -430,8 +425,6 @@ function PackagesInner() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <ChatEkrani isOpen={chatAcik} onClose={() => setChatAcik(false)} />
-
       <div style={{ background: 'linear-gradient(135deg, #0f3460, #16213e)' }} className="px-6 py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

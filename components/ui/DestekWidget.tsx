@@ -26,7 +26,7 @@ function HataYazisi({ mesaj }: { mesaj?: string }) {
   return <p className="text-xs text-red-500 mt-1">{mesaj}</p>;
 }
 
-export default function DestekWidget() {
+export default function DestekWidget({ chatAcik = false }: { chatAcik?: boolean }) {
   const [adim, setAdim]       = useState<Adim>('kapali');
   const [konu, setKonu]       = useState('');
   const [mesaj, setMesaj]     = useState('');
@@ -66,7 +66,10 @@ export default function DestekWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div
+      className="fixed bottom-6 z-50 flex flex-col items-end gap-3 transition-[right] duration-300 ease-in-out"
+      style={{ right: chatAcik ? 'calc(28rem + 1.5rem)' : '1.5rem' }}
+    >
 
       {/* Form paneli */}
       {(adim === 'form' || adim === 'basarili') && (
