@@ -16,6 +16,8 @@ export interface Paket {
   otel_isim: string;
   otel_dahil: boolean;
   ucus_dahil: boolean;
+  transfer_dahil: boolean;
+  uzmanlik: string;
   toplam_fiyat: number;
   sure_gun: number;
   aciklama: string;
@@ -26,8 +28,10 @@ export interface Rezervasyon {
   kullanici_id: string;
   paket: Paket;
   tarih: string;
-  durum: 'beklemede' | 'onaylandi' | 'iptal';
+  durum: 'beklemede' | 'onaylandi' | 'tamamlandi' | 'iptal';
   olusturma_tarihi: string;
+  takip_kodu?: string;
+  sepet_ozeti?: Record<string, unknown>[] | null;
 }
 
 export interface KullaniciProfil {
@@ -35,6 +39,15 @@ export interface KullaniciProfil {
   ad: string;
   email: string;
   rezervasyonlar: Rezervasyon[];
+}
+
+export interface Yorum {
+  id: string;
+  klinik_id: string;
+  kullanici_id: string;
+  puan: number;
+  yorum_metni: string | null;
+  olusturma_tarihi: string;
 }
 
 // ─── AI Pipeline Tipleri ──────────────────────────────────────────────────────
@@ -115,6 +128,14 @@ export interface AdminStats {
   toplam_rezervasyon: number;
   bekleyen_basvuru: number;
   acik_bilet: number;
+}
+
+export interface AdminKullanici {
+  id: string;
+  email: string;
+  created_at: string;
+  rol: KullaniciRolu | null;
+  klinik_id: string | null;
 }
 
 // ─── Ödeme Tipleri ────────────────────────────────────────────────────────────

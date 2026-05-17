@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 type Hotel = {
   id: number;
@@ -47,9 +49,12 @@ export default function HotelsPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
   const { addItem } = useCartStore();
+  const { formatla } = useDoviz();
+  const { isKlinikYoneticisi } = useKullaniciContext();
 
   const [city, setCity] = useState('Antalya');
   const [stars, setStars] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(700);
   const [nights, setNights] = useState<Record<number, number>>({});
   const [added, setAdded] = useState<number[]>([]);
 
@@ -63,7 +68,7 @@ export default function HotelsPage() {
       id: `hotel-${h.id}`,
       type: 'package',
       name: h.name,
-      detail: `${h.city} · ${h.stars}★ · ${n} ${tr ? 'gece' : 'nights'} · $${h.price_per_night}/${tr ? 'gece' : 'night'}`,
+      detail: `${h.city} · ${h.stars}★ · ${n} ${tr ? 'gece' : 'nights'} · ${formatla(h.price_per_night)}/${tr ? 'gece' : 'night'}`,
       unitPrice: h.price_per_night * n,
       quantity: 1,
     });
@@ -74,6 +79,7 @@ export default function HotelsPage() {
   const filtered = HOTELS.filter(h => {
     if (h.city !== city) return false;
     if (stars > 0 && h.stars !== stars) return false;
+    if (h.price_per_night > maxPrice) return false;
     return true;
   }).sort((a, b) => b.stars - a.stars);
 
@@ -114,18 +120,29 @@ export default function HotelsPage() {
           ))}
         </div>
 
-        {/* Yıldız filtresi */}
-        <div className="flex gap-2 mb-8">
-          <button onClick={() => setStars(0)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${stars === 0 ? 'bg-[#0f3460] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
-            {tr ? 'Tümü' : 'All'}
-          </button>
-          {[5, 4].map(s => (
-            <button key={s} onClick={() => setStars(s)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${stars === s ? 'bg-[#0f3460] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
-              {'⭐'.repeat(s)}
+        {/* Yıldız filtresi + fiyat aralığı */}
+        <div className="flex flex-wrap items-center gap-4 mb-8">
+          <div className="flex gap-2">
+            <button onClick={() => setStars(0)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${stars === 0 ? 'bg-[#0f3460] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
+              {tr ? 'Tümü' : 'All'}
             </button>
-          ))}
+            {[5, 4].map(s => (
+              <button key={s} onClick={() => setStars(s)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${stars === s ? 'bg-[#0f3460] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>
+                {'⭐'.repeat(s)}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              {tr ? `Maks. Fiyat: ${formatla(maxPrice)}/gece` : `Max. Price: ${formatla(maxPrice)}/night`}
+            </span>
+            <input type="range" min="50" max="700" step="50"
+              value={maxPrice}
+              onChange={e => setMaxPrice(Number(e.target.value))}
+              className="w-32 accent-[#0f3460]" />
+          </div>
         </div>
 
         {/* Otel kartları */}
@@ -168,11 +185,11 @@ export default function HotelsPage() {
                   <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <span className="text-xl font-extrabold text-[#0f3460]">${h.price_per_night}</span>
+                        <span className="text-xl font-extrabold text-[#0f3460]">{formatla(h.price_per_night)}</span>
                         <span className="text-xs text-gray-400 ml-1">/ {tr ? 'gece' : 'night'}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold text-gray-700">${h.price_per_night * n}</span>
+                        <span className="text-sm font-bold text-gray-700">{formatla(h.price_per_night * n)}</span>
                         <span className="text-xs text-gray-400 ml-1">{tr ? 'toplam' : 'total'}</span>
                       </div>
                     </div>
@@ -194,15 +211,17 @@ export default function HotelsPage() {
                         <span className="text-xs text-gray-500 ml-1">{tr ? 'gece' : 'nights'}</span>
                       </div>
 
-                      <button
-                        onClick={() => addHotel(h)}
-                        className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all ${
-                          isAdded
-                            ? 'bg-green-500 text-white'
-                            : 'bg-[#0f3460] text-white hover:bg-[#0a1628] hover:scale-105'
-                        }`}>
-                        {isAdded ? '✓ ' + (tr ? 'Eklendi' : 'Added') : (tr ? 'Sepete Ekle' : 'Add to Cart')}
-                      </button>
+                      {!isKlinikYoneticisi && (
+                        <button
+                          onClick={() => addHotel(h)}
+                          className={`px-5 py-2.5 text-sm font-bold rounded-xl transition-all ${
+                            isAdded
+                              ? 'bg-green-500 text-white'
+                              : 'bg-[#0f3460] text-white hover:bg-[#0a1628] hover:scale-105'
+                          }`}>
+                          {isAdded ? '✓ ' + (tr ? 'Eklendi' : 'Added') : (tr ? 'Sepete Ekle' : 'Add to Cart')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

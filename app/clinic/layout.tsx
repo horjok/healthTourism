@@ -10,6 +10,7 @@ const MENU = [
   { href: '/clinic', label: 'Dashboard', icon: '📊' },
   { href: '/clinic/paketler', label: 'Paketlerim', icon: '📦' },
   { href: '/clinic/rezervasyonlar', label: 'Rezervasyonlar', icon: '📅' },
+  { href: '/clinic/yorumlar', label: 'Yorumlar', icon: '⭐' },
 ];
 
 export default function ClinicLayout({ children }: { children: React.ReactNode }) {

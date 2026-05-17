@@ -6,6 +6,7 @@ import Navbar from "@/components/ui/Navbar";
 import ChatProvider from "@/components/ui/ChatProvider";
 import { DilProvider } from "@/lib/DilContext";
 import { DovizProvider } from "@/lib/DovizContext";
+import { KullaniciProvider } from "@/lib/KullaniciContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,10 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <DilProvider>
           <DovizProvider>
-            <ChatProvider>
-              <Navbar />
-              {children}
-            </ChatProvider>
+            <KullaniciProvider>
+              <ChatProvider>
+                <Navbar />
+                {children}
+              </ChatProvider>
+            </KullaniciProvider>
           </DovizProvider>
         </DilProvider>
       </body>

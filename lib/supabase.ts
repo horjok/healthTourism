@@ -2,7 +2,7 @@
 // Client Component'larda @/lib/supabase-client kullan, aksi hâlde addListener hatası alırsın.
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
-import type { AdminStats, ClinicApplication, Klinik, Paket, Rezervasyon, Ticket, UserRole } from './types';
+import type { AdminStats, ClinicApplication, Klinik, Paket, Rezervasyon, Ticket, UserRole, Yorum } from './types';
 
 type CookieStore = { getAll: () => { name: string; value: string }[] };
 
@@ -18,6 +18,15 @@ export function createSupabaseForRoute(cookieStore: CookieStore): SupabaseClient
       },
     }
   ) as unknown as SupabaseClient;
+}
+
+// Service-role client — yalnızca sunucu tarafı admin işlemleri için
+export function getSupabaseAdmin(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 }
 
 let _supabase: SupabaseClient | null = null;
@@ -132,22 +141,25 @@ export async function getPaketById(id: string): Promise<Paket> {
 // ─── Rezervasyonlar ───────────────────────────────────────────────────────────
 
 type YeniRezervasyon = Omit<Rezervasyon, 'id' | 'olusturma_tarihi' | 'paket'> & {
-  paket_id: string;
+  paket_id?: string | null;
+  takip_kodu?: string;
+  sepet_ozeti?: Record<string, unknown>[] | null;
 };
 
 export async function createRezervasyon(rezervasyon: YeniRezervasyon): Promise<Rezervasyon> {
+  const payload: Record<string, unknown> = {
+    kullanici_id: rezervasyon.kullanici_id,
+    tarih: rezervasyon.tarih,
+    durum: rezervasyon.durum ?? 'beklemede',
+  };
+  if (rezervasyon.paket_id) payload.paket_id = rezervasyon.paket_id;
+  if (rezervasyon.sepet_ozeti) payload.sepet_ozeti = rezervasyon.sepet_ozeti;
+  if (rezervasyon.takip_kodu) payload.takip_kodu = rezervasyon.takip_kodu;
+
   const { data, error } = await getSupabase()
     .from('rezervasyonlar')
-    .insert({
-      kullanici_id: rezervasyon.kullanici_id,
-      paket_id: rezervasyon.paket_id,
-      tarih: rezervasyon.tarih,
-      durum: rezervasyon.durum ?? 'beklemede',
-    })
-    .select(`
-      *,
-      paket:paketler(*, klinik:klinikler(*))
-    `)
+    .insert(payload)
+    .select(`*, paket:paketler(*, klinik:klinikler(*))`)
     .single();
 
   if (error) throw new Error(`Rezervasyon oluşturulamadı: ${error.message}`);
@@ -370,6 +382,84 @@ export async function getRezervasyonlarByKlinik(klinik_id: string): Promise<Reze
 
   if (error) throw new Error(`Klinik rezervasyonları getirilemedi: ${error.message}`);
   return data as Rezervasyon[];
+}
+
+export async function getYorumlarByKlinik(klinik_id: string, sb: SupabaseClient = getSupabase()): Promise<Yorum[]> {
+  const { data, error } = await sb
+    .from('yorumlar')
+    .select('*')
+    .eq('klinik_id', klinik_id)
+    .order('olusturma_tarihi', { ascending: false });
+
+  if (error) throw new Error(`Yorumlar getirilemedi: ${error.message}`);
+  return data as Yorum[];
+}
+
+type RezervasyonDurum = Rezervasyon['durum'];
+
+export async function updateRezervasyonDurum(
+  id: string,
+  durum: RezervasyonDurum,
+  klinik_id: string,
+  sb: SupabaseClient = getSupabase()
+): Promise<Rezervasyon> {
+  // Rezervasyonun hangi kliniğe ait olduğunu doğrudan paketin klinik_id'si ile kontrol et
+  const { data: rez } = await sb
+    .from('rezervasyonlar')
+    .select('id, paket_id')
+    .eq('id', id)
+    .single();
+
+  if (!rez) throw new Error('Rezervasyon bulunamadı');
+
+  const { data: paket } = await sb
+    .from('paketler')
+    .select('klinik_id')
+    .eq('id', rez.paket_id)
+    .single();
+
+  if (!paket || paket.klinik_id !== klinik_id) {
+    throw new Error('Bu rezervasyon bu kliniğe ait değil');
+  }
+
+  const { error } = await sb
+    .from('rezervasyonlar')
+    .update({ durum })
+    .eq('id', id);
+
+  if (error) throw new Error(`Rezervasyon durumu güncellenemedi: ${error.message}`);
+  return { id, durum } as unknown as Rezervasyon;
+}
+
+export async function getClinicStats(
+  klinik_id: string,
+  sb: SupabaseClient = getSupabase()
+): Promise<{ toplamGelir: number; aktifRezervasyonSayisi: number; ortPuan: number; yorumSayisi: number }> {
+  const [{ data: rezData }, { data: yorumData }] = await Promise.all([
+    sb.from('rezervasyonlar')
+      .select('durum, paket:paketler!inner(toplam_fiyat, klinik_id)')
+      .eq('paket.klinik_id', klinik_id),
+    sb.from('yorumlar')
+      .select('puan')
+      .eq('klinik_id', klinik_id),
+  ]);
+
+  type RezRow = { durum: string; paket: { toplam_fiyat: number } | null };
+  const rezervasyonlar = (rezData ?? []) as unknown as RezRow[];
+  const yorumlar = (yorumData ?? []) as { puan: number }[];
+
+  const toplamGelir = rezervasyonlar
+    .filter((r) => r.durum === 'tamamlandi')
+    .reduce((acc, r) => acc + (r.paket?.toplam_fiyat ?? 0), 0);
+
+  const aktifRezervasyonSayisi = rezervasyonlar
+    .filter((r) => r.durum === 'beklemede' || r.durum === 'onaylandi').length;
+
+  const ortPuan = yorumlar.length > 0
+    ? yorumlar.reduce((acc, y) => acc + y.puan, 0) / yorumlar.length
+    : 0;
+
+  return { toplamGelir, aktifRezervasyonSayisi, ortPuan, yorumSayisi: yorumlar.length };
 }
 
 export async function createTicket(

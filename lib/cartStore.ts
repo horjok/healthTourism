@@ -26,6 +26,8 @@ type CartStore = {
   addItem: (item: Omit<CartItem, 'lineTotal'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  incrementQuantity: (id: string) => void;
+  decrementQuantity: (id: string) => void;
   clearCart: () => void;
   setPassengers: (p: Passengers) => void;
   totalPrice: () => number;
@@ -62,6 +64,16 @@ export const useCartStore = create<CartStore>()(
           i.id === id ? { ...i, quantity, lineTotal: i.unitPrice * quantity } : i
         )
       })),
+
+      incrementQuantity: (id) => {
+        const item = get().items.find(i => i.id === id);
+        if (item) get().updateQuantity(id, item.quantity + 1);
+      },
+
+      decrementQuantity: (id) => {
+        const item = get().items.find(i => i.id === id);
+        if (item && item.quantity > 1) get().updateQuantity(id, item.quantity - 1);
+      },
 
       clearCart: () => set({ items: [] }),
 

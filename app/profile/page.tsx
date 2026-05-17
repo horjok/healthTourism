@@ -261,9 +261,9 @@ export default function ProfilePage() {
                           </div>
                         )}
                         <div className="flex items-center justify-between px-5 py-2.5 bg-gray-50">
-                          <span className="text-xs text-gray-500">🔖 İşlem No</span>
-                          <span className="text-xs font-mono text-gray-600 break-all text-right max-w-[60%]">
-                            {rez.id}
+                          <span className="text-xs text-gray-500">🔖 Takip Kodu</span>
+                          <span className="text-xs font-mono font-bold text-[#0f3460] break-all text-right max-w-[60%]">
+                            {rez.takip_kodu ?? rez.id.slice(0, 8).toUpperCase()}
                           </span>
                         </div>
                       </div>

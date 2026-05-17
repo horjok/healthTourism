@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useDilContext } from '@/lib/DilContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 type Operation = {
   id: string;
@@ -65,6 +66,7 @@ export default function HealthPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
   const { addItem } = useCartStore();
+  const { isKlinikYoneticisi } = useKullaniciContext();
 
   const [category, setCategory]           = useState('sac');
   const [selectedOp, setSelectedOp]       = useState<Operation | null>(null);
@@ -403,24 +405,26 @@ export default function HealthPage() {
             </div>
           )}
 
-          <button
-            onClick={handleAdd}
-            disabled={!selectedOp || !selectedClinic || added}
-            className={`w-full py-4 font-bold rounded-2xl text-base transition-all ${
-              added
-                ? 'bg-green-500 text-white'
-                : selectedOp && selectedClinic
-                ? 'bg-[#0f3460] text-white hover:bg-[#0a1628] shadow-lg hover:scale-[1.02]'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}>
-            {added
-              ? '✓ ' + (tr ? 'Sepete Eklendi!' : 'Added to Cart!')
-              : !selectedOp
-              ? (tr ? 'Önce operasyon seçin' : 'Select an operation first')
-              : !selectedClinic
-              ? (tr ? 'Önce klinik seçin' : 'Select a clinic first')
-              : (tr ? '🛒 Sepete Ekle' : '🛒 Add to Cart')}
-          </button>
+          {!isKlinikYoneticisi && (
+            <button
+              onClick={handleAdd}
+              disabled={!selectedOp || !selectedClinic || added}
+              className={`w-full py-4 font-bold rounded-2xl text-base transition-all ${
+                added
+                  ? 'bg-green-500 text-white'
+                  : selectedOp && selectedClinic
+                  ? 'bg-[#0f3460] text-white hover:bg-[#0a1628] shadow-lg hover:scale-[1.02]'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}>
+              {added
+                ? '✓ ' + (tr ? 'Sepete Eklendi!' : 'Added to Cart!')
+                : !selectedOp
+                ? (tr ? 'Önce operasyon seçin' : 'Select an operation first')
+                : !selectedClinic
+                ? (tr ? 'Önce klinik seçin' : 'Select a clinic first')
+                : (tr ? '🛒 Sepete Ekle' : '🛒 Add to Cart')}
+            </button>
+          )}
         </div>
       </div>
     </main>

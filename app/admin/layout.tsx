@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const MENU = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
+  { href: '/admin/kullanicilar', label: 'Kullanıcılar', icon: '👥' },
   { href: '/admin/klinikler', label: 'Klinik Başvuruları', icon: '🏥' },
   { href: '/admin/rezervasyonlar', label: 'Rezervasyonlar', icon: '📅' },
   { href: '/admin/tickets', label: 'Destek Biletleri', icon: '🎫' },

@@ -7,20 +7,38 @@ import type { Paket } from '@/lib/types';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useChatContext } from '@/components/ui/ChatProvider';
+import { useDilContext } from '@/lib/DilContext';
+import { paketBaslikCevir } from '@/lib/translations';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
+
+// ─── Uzmanlık çevirileri (TR → EN) ───────────────────────────────────────────
+
+const UZMANLIK_EN: Record<string, string> = {
+  'Ortopedi': 'Orthopedics',
+  'diş': 'Dentistry',
+  'göz': 'Ophthalmology',
+  'estetik cerrahi': 'Aesthetic Surgery',
+  'kardiyoloji': 'Cardiology',
+  'nöroloji': 'Neurology',
+  'dermatoloji': 'Dermatology',
+  'saç ekimi': 'Hair Transplant',
+  'onkoloji': 'Oncology',
+  'psikiyatri': 'Psychiatry',
+};
 
 // ─── Uzmanlık rozet renkleri ──────────────────────────────────────────────────
 
 const UZMANLIK_RENK: Record<string, string> = {
-  'ortopedi':        'bg-blue-100 text-blue-700 hover:ring-blue-400',
-  'diş':             'bg-yellow-100 text-yellow-700 hover:ring-yellow-400',
-  'göz':             'bg-green-100 text-green-700 hover:ring-green-400',
+  'ortopedi': 'bg-blue-100 text-blue-700 hover:ring-blue-400',
+  'diş': 'bg-yellow-100 text-yellow-700 hover:ring-yellow-400',
+  'göz': 'bg-green-100 text-green-700 hover:ring-green-400',
   'estetik cerrahi': 'bg-pink-100 text-pink-700 hover:ring-pink-400',
-  'kardiyoloji':     'bg-red-100 text-red-700 hover:ring-red-400',
-  'nöroloji':        'bg-purple-100 text-purple-700 hover:ring-purple-400',
-  'dermatoloji':     'bg-teal-100 text-teal-700 hover:ring-teal-400',
-  'saç ekimi':       'bg-orange-100 text-orange-700 hover:ring-orange-400',
-  'onkoloji':        'bg-rose-100 text-rose-700 hover:ring-rose-400',
-  'psikiyatri':      'bg-indigo-100 text-indigo-700 hover:ring-indigo-400',
+  'kardiyoloji': 'bg-red-100 text-red-700 hover:ring-red-400',
+  'nöroloji': 'bg-purple-100 text-purple-700 hover:ring-purple-400',
+  'dermatoloji': 'bg-teal-100 text-teal-700 hover:ring-teal-400',
+  'saç ekimi': 'bg-orange-100 text-orange-700 hover:ring-orange-400',
+  'onkoloji': 'bg-rose-100 text-rose-700 hover:ring-rose-400',
+  'psikiyatri': 'bg-indigo-100 text-indigo-700 hover:ring-indigo-400',
 };
 
 // ─── Filtre state tipi ────────────────────────────────────────────────────────
@@ -36,13 +54,13 @@ interface FiltreState {
 }
 
 const BOSH_FILTRE: FiltreState = {
-  uzmanlik:  '',
-  maxFiyat:  '',
-  sehir:     '',
+  uzmanlik: '',
+  maxFiyat: '',
+  sehir: '',
   ucusDahil: false,
   otelDahil: false,
-  akredite:  false,
-  minPuan:   '',
+  akredite: false,
+  minPuan: '',
 };
 
 // ─── Paket kartı ──────────────────────────────────────────────────────────────
@@ -56,6 +74,9 @@ function PaketKarti({
 }) {
   const { formatla } = useDoviz();
   const { addItem, items } = useCartStore();
+  const { dil } = useDilContext();
+  const { isKlinikYoneticisi } = useKullaniciContext();
+  const tr = dil === 'tr';
   const [eklendi, setEklendi] = useState(false);
 
   const sepette = items.some((i) => i.id === paket.id);
@@ -65,7 +86,7 @@ function PaketKarti({
       id: paket.id,
       type: 'package',
       name: paket.baslik,
-      detail: `${paket.sure_gun} gün · ${paket.klinik.isim} · ${paket.klinik.sehir}`,
+      detail: `${paket.sure_gun} ${tr ? 'gün' : 'days'} · ${paket.klinik.isim} · ${paket.klinik.sehir}`,
       unitPrice: paket.toplam_fiyat,
       quantity: 1,
     });
@@ -81,7 +102,7 @@ function PaketKarti({
             <p className="text-xs text-[#0f3460] font-semibold uppercase tracking-wide mb-1">
               {paket.klinik.sehir}
             </p>
-            <h3 className="font-bold text-gray-900 text-base leading-snug">{paket.baslik}</h3>
+            <h3 className="font-bold text-gray-900 text-base leading-snug">{paketBaslikCevir(paket.baslik, dil)}</h3>
           </div>
           <div className="flex flex-col gap-1 shrink-0">
             {paket.klinik.akredite && (
@@ -91,12 +112,12 @@ function PaketKarti({
             )}
             {paket.ucus_dahil && (
               <span className="bg-[#0f3460] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                ✈ Uçuş
+                ✈ {tr ? 'Uçuş' : 'Flight'}
               </span>
             )}
             {paket.otel_dahil && (
               <span className="bg-emerald-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                🏨 Otel
+                🏨 {tr ? 'Otel' : 'Hotel'}
               </span>
             )}
           </div>
@@ -111,18 +132,17 @@ function PaketKarti({
               key={u}
               type="button"
               onClick={() => onUzmanlikSec(u)}
-              title={`${u} ile filtrele`}
-              className={`text-xs font-medium px-2.5 py-0.5 rounded-full transition-all hover:ring-2 hover:ring-offset-1 cursor-pointer ${
-                UZMANLIK_RENK[u] ?? 'bg-gray-100 text-gray-600 hover:ring-gray-400'
-              }`}
+              title={tr ? `${u} ile filtrele` : `Filter by ${UZMANLIK_EN[u] ?? u}`}
+              className={`text-xs font-medium px-2.5 py-0.5 rounded-full transition-all hover:ring-2 hover:ring-offset-1 cursor-pointer ${UZMANLIK_RENK[u] ?? 'bg-gray-100 text-gray-600 hover:ring-gray-400'
+                }`}
             >
-              {u}
+              {tr ? u : (UZMANLIK_EN[u] ?? u)}
             </button>
           ))}
         </div>
 
         <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span>🗓 {paket.sure_gun} gün</span>
+          <span>🗓 {paket.sure_gun} {tr ? 'gün' : 'days'}</span>
           <span>⭐ {paket.klinik.puan}</span>
         </div>
       </div>
@@ -132,26 +152,31 @@ function PaketKarti({
           <span className="text-2xl font-extrabold text-[#0f3460]">
             {formatla(paket.toplam_fiyat)}
           </span>
-          <span className="text-xs text-gray-400 ml-1">/ kişi</span>
+          <span className="text-xs text-gray-400 ml-1">/ {tr ? 'kişi' : 'person'}</span>
         </div>
         <div className="flex gap-2 shrink-0">
           <Link
             href={`/packages/${paket.id}`}
             className="px-3 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:border-gray-400 transition-colors"
           >
-            İncele
+            {tr ? 'İncele' : 'View'}
           </Link>
-          <button
-            type="button"
-            onClick={sepeteEkle}
-            className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${
-              eklendi || sepette
-                ? 'bg-green-500 text-white'
-                : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
-            }`}
-          >
-            {eklendi ? '✓ Eklendi' : sepette ? '✓ Sepette' : '+ Sepete Ekle'}
-          </button>
+          {!isKlinikYoneticisi && (
+            <button
+              type="button"
+              onClick={sepeteEkle}
+              className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors ${eklendi || sepette
+                  ? 'bg-green-500 text-white'
+                  : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
+                }`}
+            >
+              {eklendi
+                ? `✓ ${tr ? 'Eklendi' : 'Added'}`
+                : sepette
+                  ? `✓ ${tr ? 'Sepette' : 'In Cart'}`
+                  : `+ ${tr ? 'Sepete Ekle' : 'Add to Cart'}`}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -174,6 +199,8 @@ function FiltrePanel({
   onChange: (f: FiltreState) => void;
 }) {
   const { sembol, kur } = useDoviz();
+  const { dil } = useDilContext();
+  const tr = dil === 'tr';
 
   // lokal.maxFiyat seçili döviz cinsinden tutulur (gösterim için)
   const [lokal, setLokal] = useState<FiltreState>({
@@ -192,7 +219,7 @@ function FiltrePanel({
         ? String(Math.round(Number(filtreler.maxFiyat) * kur))
         : '',
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filtreler.uzmanlik, filtreler.maxFiyat, filtreler.sehir,
     filtreler.ucusDahil, filtreler.otelDahil, filtreler.akredite, filtreler.minPuan,
@@ -222,27 +249,31 @@ function FiltrePanel({
       {/* Satır 1: dropdown'lar + sayısal girdiler */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Uzmanlık</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+            {tr ? 'Uzmanlık' : 'Specialty'}
+          </label>
           <select
             value={lokal.uzmanlik}
             onChange={(e) => set('uzmanlik', e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30"
           >
-            <option value="">Tüm Uzmanlıklar</option>
+            <option value="">{tr ? 'Tüm Uzmanlıklar' : 'All Specialties'}</option>
             {uzmanliklar.map((u) => (
-              <option key={u} value={u}>{u}</option>
+              <option key={u} value={u}>{tr ? u : (UZMANLIK_EN[u] ?? u)}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Şehir</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+            {tr ? 'Şehir' : 'City'}
+          </label>
           <select
             value={lokal.sehir}
             onChange={(e) => set('sehir', e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30"
           >
-            <option value="">Tüm Şehirler</option>
+            <option value="">{tr ? 'Tüm Şehirler' : 'All Cities'}</option>
             {sehirler.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -251,11 +282,13 @@ function FiltrePanel({
 
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-            Maks. Fiyat ({sembol})
+            {tr ? `Maks. Fiyat (${sembol})` : `Max. Price (${sembol})`}
           </label>
           <input
             type="number"
-            placeholder={`ör. ${Math.round(3000 * kur).toLocaleString('tr-TR')}`}
+            placeholder={tr
+              ? `ör. ${Math.round(3000 * kur).toLocaleString('tr-TR')}`
+              : `e.g. ${Math.round(3000 * kur).toLocaleString('en-US')}`}
             value={lokal.maxFiyat}
             onChange={(e) => set('maxFiyat', e.target.value)}
             min={0}
@@ -264,10 +297,12 @@ function FiltrePanel({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Min. Puan</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+            {tr ? 'Min. Puan' : 'Min. Rating'}
+          </label>
           <input
             type="number"
-            placeholder="ör. 4"
+            placeholder={tr ? 'ör. 4' : 'e.g. 4'}
             value={lokal.minPuan}
             onChange={(e) => set('minPuan', e.target.value)}
             min={0}
@@ -283,18 +318,17 @@ function FiltrePanel({
         <div className="flex flex-wrap gap-3 flex-1">
           {(
             [
-              { key: 'ucusDahil', label: '✈ Uçuş Dahil' },
-              { key: 'otelDahil', label: '🏨 Otel Dahil' },
-              { key: 'akredite',  label: '★ JCI Akredite' },
-            ] as { key: keyof FiltreState; label: string }[]
-          ).map(({ key, label }) => (
+              { key: 'ucusDahil', labelTr: '✈ Uçuş Dahil', labelEn: '✈ Flight Included' },
+              { key: 'otelDahil', labelTr: '🏨 Otel Dahil', labelEn: '🏨 Hotel Included' },
+              { key: 'akredite', labelTr: '★ JCI Akredite', labelEn: '★ JCI Accredited' },
+            ] as { key: keyof FiltreState; labelTr: string; labelEn: string }[]
+          ).map(({ key, labelTr, labelEn }) => (
             <label
               key={key}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-medium transition-colors select-none ${
-                lokal[key]
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm font-medium transition-colors select-none ${lokal[key]
                   ? 'bg-[#0f3460] text-white border-[#0f3460]'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-[#0f3460]/40'
-              }`}
+                }`}
             >
               <input
                 type="checkbox"
@@ -302,7 +336,7 @@ function FiltrePanel({
                 onChange={(e) => set(key, e.target.checked as FiltreState[typeof key])}
                 className="sr-only"
               />
-              {label}
+              {tr ? labelTr : labelEn}
             </label>
           ))}
         </div>
@@ -313,7 +347,7 @@ function FiltrePanel({
               onClick={temizle}
               className="text-sm text-gray-400 hover:text-gray-600 px-3 py-2 whitespace-nowrap"
             >
-              Temizle ({aktifSayisi})
+              {tr ? `Temizle (${aktifSayisi})` : `Clear (${aktifSayisi})`}
             </button>
           )}
           <button
@@ -321,7 +355,7 @@ function FiltrePanel({
             disabled={yukleniyor}
             className="px-6 py-2.5 bg-[#0f3460] text-white text-sm font-semibold rounded-xl hover:bg-[#16213e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            {yukleniyor ? 'Aranıyor...' : 'Filtrele'}
+            {yukleniyor ? (tr ? 'Aranıyor...' : 'Searching...') : (tr ? 'Filtrele' : 'Filter')}
           </button>
         </div>
       </div>
@@ -334,25 +368,27 @@ function FiltrePanel({
 function PackagesInner() {
   const searchParams = useSearchParams();
   const { setChatAcik } = useChatContext();
-  const router       = useRouter();
+  const router = useRouter();
+  const { dil } = useDilContext();
+  const tr = dil === 'tr';
 
   function urldenFiltre(): FiltreState {
     return {
-      uzmanlik:  searchParams.get('uzmanlik')   ?? '',
-      maxFiyat:  searchParams.get('max_fiyat')  ?? '',
-      sehir:     searchParams.get('sehir')       ?? '',
+      uzmanlik: searchParams.get('uzmanlik') ?? '',
+      maxFiyat: searchParams.get('max_fiyat') ?? '',
+      sehir: searchParams.get('sehir') ?? '',
       ucusDahil: searchParams.get('ucus_dahil') === 'true',
       otelDahil: searchParams.get('otel_dahil') === 'true',
-      akredite:  searchParams.get('akredite')   === 'true',
-      minPuan:   searchParams.get('min_puan')   ?? '',
+      akredite: searchParams.get('akredite') === 'true',
+      minPuan: searchParams.get('min_puan') ?? '',
     };
   }
 
-  const [filtreler, setFiltreler]     = useState<FiltreState>(urldenFiltre);
-  const [paketler, setPaketler]       = useState<Paket[]>([]);
+  const [filtreler, setFiltreler] = useState<FiltreState>(urldenFiltre);
+  const [paketler, setPaketler] = useState<Paket[]>([]);
   const [tumPaketler, setTumPaketler] = useState<Paket[]>([]);
-  const [yukleniyor, setYukleniyor]   = useState(true);
-  const [hata, setHata]               = useState(false);
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [hata, setHata] = useState(false);
 
   // Filtre seçenekleri için tüm paketleri bir kez çek
   useEffect(() => {
@@ -361,7 +397,7 @@ function PackagesInner() {
       .then((json: { success: boolean; data: Paket[] }) => {
         if (json.success) setTumPaketler(json.data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Tüm paketlerden benzersiz uzmanlıkları ve şehirleri türet
@@ -381,13 +417,13 @@ function PackagesInner() {
     setYukleniyor(true);
     setHata(false);
     const p = new URLSearchParams();
-    if (f.uzmanlik)  p.set('uzmanlik',   f.uzmanlik);
-    if (f.maxFiyat)  p.set('max_fiyat',  f.maxFiyat); // EUR cinsinden
-    if (f.sehir)     p.set('sehir',      f.sehir);
+    if (f.uzmanlik) p.set('uzmanlik', f.uzmanlik);
+    if (f.maxFiyat) p.set('max_fiyat', f.maxFiyat); // EUR cinsinden
+    if (f.sehir) p.set('sehir', f.sehir);
     if (f.ucusDahil) p.set('ucus_dahil', 'true');
     if (f.otelDahil) p.set('otel_dahil', 'true');
-    if (f.akredite)  p.set('akredite',   'true');
-    if (f.minPuan)   p.set('min_puan',   f.minPuan);
+    if (f.akredite) p.set('akredite', 'true');
+    if (f.minPuan) p.set('min_puan', f.minPuan);
     fetch(`/api/packages${p.size ? '?' + p.toString() : ''}`)
       .then((r) => r.json())
       .then((json: { success: boolean; data: Paket[] }) => {
@@ -408,13 +444,13 @@ function PackagesInner() {
 
   function urlGuncelle(f: FiltreState) {
     const p = new URLSearchParams();
-    if (f.uzmanlik)  p.set('uzmanlik',   f.uzmanlik);
-    if (f.maxFiyat)  p.set('max_fiyat',  f.maxFiyat);
-    if (f.sehir)     p.set('sehir',      f.sehir);
+    if (f.uzmanlik) p.set('uzmanlik', f.uzmanlik);
+    if (f.maxFiyat) p.set('max_fiyat', f.maxFiyat);
+    if (f.sehir) p.set('sehir', f.sehir);
     if (f.ucusDahil) p.set('ucus_dahil', 'true');
     if (f.otelDahil) p.set('otel_dahil', 'true');
-    if (f.akredite)  p.set('akredite',   'true');
-    if (f.minPuan)   p.set('min_puan',   f.minPuan);
+    if (f.akredite) p.set('akredite', 'true');
+    if (f.minPuan) p.set('min_puan', f.minPuan);
     router.replace(`/packages${p.size ? '?' + p.toString() : ''}`, { scroll: false });
   }
 
@@ -428,16 +464,22 @@ function PackagesInner() {
       <div style={{ background: 'linear-gradient(135deg, #0f3460, #16213e)' }} className="px-6 py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-white">Tüm Paketler</h1>
+            <h1 className="text-3xl font-extrabold text-white">
+              {tr ? 'Tüm Paketler' : 'All Packages'}
+            </h1>
             <p className="text-blue-200 text-sm mt-1">
-              {yukleniyor ? 'Aranıyor...' : `${paketler.length} paket bulundu`}
+              {yukleniyor
+                ? (tr ? 'Aranıyor...' : 'Searching...')
+                : tr
+                  ? `${paketler.length} paket bulundu`
+                  : `${paketler.length} packages found`}
             </p>
           </div>
           <button
             onClick={() => setChatAcik(true)}
             className="px-5 py-2.5 bg-white text-[#0f3460] text-sm font-bold rounded-xl hover:bg-blue-50 transition-colors"
           >
-            ✨ AI ile Paket Bul
+            {tr ? '✨ AI ile Paket Bul' : '✨ Find with AI'}
           </button>
         </div>
       </div>
@@ -455,24 +497,32 @@ function PackagesInner() {
           <div className="flex justify-center py-20">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 border-4 border-[#0f3460] border-t-transparent rounded-full animate-spin" />
-              <p className="text-gray-400 text-sm">Yükleniyor...</p>
+              <p className="text-gray-400 text-sm">{tr ? 'Yükleniyor...' : 'Loading...'}</p>
             </div>
           </div>
         )}
 
         {!yukleniyor && hata && (
           <div className="text-center py-20">
-            <p className="text-red-500 font-medium">Paketler yüklenemedi</p>
-            <p className="text-gray-400 text-sm mt-1">Lütfen sayfayı yenileyin</p>
+            <p className="text-red-500 font-medium">
+              {tr ? 'Paketler yüklenemedi' : 'Failed to load packages'}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              {tr ? 'Lütfen sayfayı yenileyin' : 'Please refresh the page'}
+            </p>
           </div>
         )}
 
         {!yukleniyor && !hata && paketler.length === 0 && (
           <div className="text-center py-20">
             <p className="text-3xl mb-3">🔍</p>
-            <p className="text-gray-600 font-medium">Bu kriterlere uygun paket bulunamadı</p>
+            <p className="text-gray-600 font-medium">
+              {tr ? 'Bu kriterlere uygun paket bulunamadı' : 'No packages found for these criteria'}
+            </p>
             <p className="text-gray-400 text-sm mt-1">
-              Filtreleri değiştirmeyi ya da AI öneri aracını denemeyi deneyin
+              {tr
+                ? 'Filtreleri değiştirmeyi ya da AI öneri aracını denemeyi deneyin'
+                : 'Try changing the filters or use the AI recommendation tool'}
             </p>
           </div>
         )}

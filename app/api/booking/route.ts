@@ -1,44 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaketById, createRezervasyon, getKullaniciRezervasyonlari, cancelRezervasyonById } from '@/lib/supabase';
 import { processMockPayment } from '@/lib/mock-payment';
+import { generatePNR } from '@/lib/pnr';
 
 interface BookingIstegi {
-  paket_id: string;
+  paket_id?: string;
   kullanici_id: string;
   tarih: string;
+  sepet_ozeti?: Record<string, unknown>[];
+  toplam_fiyat?: number;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as BookingIstegi;
 
-    if (!body.paket_id || !body.kullanici_id || !body.tarih) {
+    if (!body.kullanici_id || !body.tarih) {
       return NextResponse.json(
-        { success: false, error: 'Paket, kullanıcı ve tarih bilgileri zorunludur' },
+        { success: false, error: 'Kullanıcı ve tarih bilgileri zorunludur' },
         { status: 400 }
       );
     }
 
-    // Paketi doğrula — bulunamazsa supabase.ts hata fırlatır
-    let paket;
-    try {
-      paket = await getPaketById(body.paket_id);
-    } catch {
+    if (!body.paket_id && !body.sepet_ozeti?.length) {
       return NextResponse.json(
-        { success: false, error: 'Paket bulunamadı' },
-        { status: 404 }
+        { success: false, error: 'Paket veya sepet bilgisi zorunludur' },
+        { status: 400 }
       );
     }
 
-    // Önce rezervasyon oluştur, sonra ödemeyi işle
+    const takip_kodu = generatePNR();
+    let tutar = body.toplam_fiyat ?? 0;
+
+    if (body.paket_id) {
+      let paket;
+      try {
+        paket = await getPaketById(body.paket_id);
+      } catch {
+        return NextResponse.json({ success: false, error: 'Paket bulunamadı' }, { status: 404 });
+      }
+      tutar = paket.toplam_fiyat;
+    }
+
     const rezervasyon = await createRezervasyon({
       kullanici_id: body.kullanici_id,
-      paket_id: body.paket_id,
+      paket_id: body.paket_id ?? null,
       tarih: body.tarih,
       durum: 'beklemede',
+      takip_kodu,
+      sepet_ozeti: body.sepet_ozeti ?? null,
     });
 
-    const odeme = await processMockPayment(paket.toplam_fiyat);
+    const odeme = await processMockPayment(tutar);
 
     return NextResponse.json({ success: true, data: { rezervasyon, odeme } });
   } catch {

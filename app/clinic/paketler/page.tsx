@@ -10,16 +10,32 @@ import type { Paket } from '@/lib/types';
 type SiraKey = 'baslik' | 'toplam_fiyat' | 'sure_gun';
 type SiraYon = 'asc' | 'desc';
 
-const BOŞ_FORM = {
-  baslik: '', otel_isim: '', otel_dahil: false, ucus_dahil: false,
-  toplam_fiyat: '', sure_gun: '', aciklama: '',
+const UZMANLIKLAR = [
+  'diş tedavisi', 'estetik cerrahi', 'estetik tıp ve kozmetoloji', 'fizik tedavi',
+  'fleboloji', 'gastroenteroloji', 'kalp cerrahisi', 'kardiyoloji', 'kilo verme ameliyatı',
+  'kulak burun boğaz', 'nefroloji', 'nöroloji', 'nükleer tıp', 'oftalmoloji', 'onkoloji',
+  'ortopedi', 'pediatri', 'proktoloji', 'protez ve ortez', 'psikoloji', 'psikiyatri',
+  'rehabilitasyon', 'teşhis', 'transplantoloji', 'üroloji',
+];
+
+type FormDeger = {
+  baslik: string; otel_isim: string; otel_dahil: boolean; ucus_dahil: boolean;
+  transfer_dahil: boolean; uzmanliklar: string[]; toplam_fiyat: string;
+  sure_gun: string; aciklama: string;
 };
 
-type FormHata = Partial<Record<keyof typeof BOŞ_FORM, string>>;
+const BOŞ_FORM: FormDeger = {
+  baslik: '', otel_isim: '', otel_dahil: false, ucus_dahil: false, transfer_dahil: false,
+  uzmanliklar: [], toplam_fiyat: '', sure_gun: '', aciklama: '',
+};
 
-// Zod benzeri şema doğrulama — harici bağımlılık olmadan
-function validasyonYap(form: typeof BOŞ_FORM): FormHata {
+type FormHata = Partial<Record<keyof FormDeger, string>>;
+
+function validasyonYap(form: FormDeger): FormHata {
   const h: FormHata = {};
+
+  if (form.uzmanliklar.length === 0)
+    h.uzmanliklar = 'En az bir uzmanlık alanı seçiniz.';
 
   if (!form.baslik.trim())
     h.baslik = 'Paket adı zorunludur.';
@@ -45,8 +61,8 @@ function validasyonYap(form: typeof BOŞ_FORM): FormHata {
   if (form.otel_isim && form.otel_isim.length > 100)
     h.otel_isim = 'En fazla 100 karakter olabilir.';
 
-  if (form.aciklama && form.aciklama.length > 500)
-    h.aciklama = 'En fazla 500 karakter olabilir.';
+  if (form.aciklama && form.aciklama.length > 1000)
+    h.aciklama = 'En fazla 1000 karakter olabilir.';
 
   return h;
 }
@@ -70,7 +86,7 @@ export default function ClinicPaketler() {
   const [klinikId, setKlinikId]       = useState<string | null>(null);
   const [paketler, setPaketler]       = useState<Paket[]>([]);
   const [yukleniyor, setYukleniyor]   = useState(true);
-  const [form, setForm]               = useState(BOŞ_FORM);
+  const [form, setForm]               = useState<FormDeger>(BOŞ_FORM);
   const [hatalar, setHatalar]         = useState<FormHata>({});
   const [formAcik, setFormAcik]       = useState(false);
   const [duzenlenenId, setDuzenlenenId] = useState<string | null>(null);
@@ -131,6 +147,8 @@ export default function ClinicPaketler() {
     setForm({
       baslik: p.baslik, otel_isim: p.otel_isim ?? '',
       otel_dahil: p.otel_dahil, ucus_dahil: p.ucus_dahil,
+      transfer_dahil: p.transfer_dahil ?? false,
+      uzmanliklar: p.uzmanlik ? p.uzmanlik.split(', ').filter(Boolean) : [],
       toplam_fiyat: String(p.toplam_fiyat), sure_gun: String(p.sure_gun),
       aciklama: p.aciklama ?? '',
     });
@@ -155,13 +173,16 @@ export default function ClinicPaketler() {
     setKaydediliyor(true); setGenelHata('');
 
     const payload = {
-      ...form,
-      baslik:       form.baslik.trim(),
-      otel_isim:    form.otel_isim.trim(),
-      aciklama:     form.aciklama.trim(),
-      toplam_fiyat: Number(form.toplam_fiyat),
-      sure_gun:     Number(form.sure_gun),
-      klinik_id:    klinikId,
+      baslik:         form.baslik.trim(),
+      otel_isim:      form.otel_isim.trim(),
+      aciklama:       form.aciklama.trim(),
+      toplam_fiyat:   Number(form.toplam_fiyat),
+      sure_gun:       Number(form.sure_gun),
+      klinik_id:      klinikId,
+      uzmanlik:       form.uzmanliklar.join(', '),
+      transfer_dahil: form.transfer_dahil,
+      otel_dahil:     form.otel_dahil,
+      ucus_dahil:     form.ucus_dahil,
     };
 
     const url    = duzenlenenId ? `/api/clinic/paketler/${duzenlenenId}` : '/api/clinic/paketler';
@@ -281,6 +302,44 @@ export default function ClinicPaketler() {
                 <HataYazisi mesaj={hatalar.sure_gun} />
               </div>
 
+              {/* Uzmanlık Alanları */}
+              <div className="col-span-2">
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                  Uzmanlık Alanları <span className="text-red-500">*</span>
+                  {form.uzmanliklar.length > 0 && (
+                    <span className="ml-2 font-normal text-[#0f3460]">({form.uzmanliklar.length} seçili)</span>
+                  )}
+                </label>
+                <div className={`border rounded-xl p-3 max-h-40 overflow-y-auto ${hatalar.uzmanliklar ? 'border-red-400' : 'border-gray-200'}`}>
+                  <div className="flex flex-wrap gap-2">
+                    {UZMANLIKLAR.map((u) => {
+                      const secili = form.uzmanliklar.includes(u);
+                      return (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => {
+                            const guncellenmis = secili
+                              ? form.uzmanliklar.filter((x) => x !== u)
+                              : [...form.uzmanliklar, u];
+                            setForm({ ...form, uzmanliklar: guncellenmis });
+                            setHatalar({ ...hatalar, uzmanliklar: undefined });
+                          }}
+                          className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                            secili
+                              ? 'bg-[#0f3460] text-white border-[#0f3460]'
+                              : 'text-gray-600 border-gray-200 hover:border-[#0f3460] hover:text-[#0f3460]'
+                          }`}
+                        >
+                          {u}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <HataYazisi mesaj={hatalar.uzmanliklar} />
+              </div>
+
               {/* Otel Adı */}
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Otel Adı</label>
@@ -296,25 +355,22 @@ export default function ClinicPaketler() {
               </div>
 
               {/* Checkboxlar */}
-              <div className="flex items-center gap-6 pt-5">
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={form.otel_dahil}
-                    onChange={(e) => setForm({ ...form, otel_dahil: e.target.checked })}
-                    className="w-4 h-4 rounded"
-                  />
-                  🏨 Otel Dahil
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={form.ucus_dahil}
-                    onChange={(e) => setForm({ ...form, ucus_dahil: e.target.checked })}
-                    className="w-4 h-4 rounded"
-                  />
-                  ✈ Uçuş Dahil
-                </label>
+              <div className="flex items-center flex-wrap gap-5 pt-5">
+                {([
+                  { key: 'otel_dahil' as const,     label: '🏨 Otel Dahil'     },
+                  { key: 'ucus_dahil' as const,     label: '✈ Uçuş Dahil'     },
+                  { key: 'transfer_dahil' as const, label: '🚌 Transfer Dahil' },
+                ] as { key: 'otel_dahil' | 'ucus_dahil' | 'transfer_dahil'; label: string }[]).map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={form[key]}
+                      onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
+                      className="w-4 h-4 rounded"
+                    />
+                    {label}
+                  </label>
+                ))}
               </div>
 
               {/* Açıklama */}
@@ -322,15 +378,15 @@ export default function ClinicPaketler() {
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">
                   Açıklama
                   <span className="font-normal text-gray-400 ml-2">
-                    ({form.aciklama.length}/500)
+                    ({form.aciklama.length}/1000)
                   </span>
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={form.aciklama}
                   onChange={(e) => { setForm({ ...form, aciklama: e.target.value }); setHatalar({ ...hatalar, aciklama: undefined }); }}
                   placeholder="Paket içeriğini detaylı açıklayın..."
-                  maxLength={500}
+                  maxLength={1000}
                   className={`w-full border rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 ${hatalar.aciklama ? 'border-red-400' : 'border-gray-200'}`}
                 />
                 <HataYazisi mesaj={hatalar.aciklama} />
@@ -438,6 +494,13 @@ export default function ClinicPaketler() {
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-semibold text-gray-900">{p.baslik}</p>
+                    {p.uzmanlik && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {p.uzmanlik.split(', ').filter(Boolean).map((u) => (
+                          <span key={u} className="inline-block text-xs bg-[#0f3460]/10 text-[#0f3460] px-2 py-0.5 rounded-full">{u}</span>
+                        ))}
+                      </div>
+                    )}
                     {p.aciklama && (
                       <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 max-w-[240px]">{p.aciklama}</p>
                     )}
@@ -448,9 +511,10 @@ export default function ClinicPaketler() {
                   <td className="px-4 py-3 text-gray-600">{p.sure_gun} gün</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1.5">
-                      {p.otel_dahil  && <span className="text-xs bg-blue-50  text-blue-600  px-2 py-0.5 rounded-full">🏨 Otel</span>}
-                      {p.ucus_dahil  && <span className="text-xs bg-sky-50   text-sky-600   px-2 py-0.5 rounded-full">✈ Uçuş</span>}
-                      {!p.otel_dahil && !p.ucus_dahil && <span className="text-xs text-gray-300">—</span>}
+                      {p.otel_dahil     && <span className="text-xs bg-blue-50   text-blue-600   px-2 py-0.5 rounded-full">🏨 Otel</span>}
+                      {p.ucus_dahil     && <span className="text-xs bg-sky-50    text-sky-600    px-2 py-0.5 rounded-full">✈ Uçuş</span>}
+                      {p.transfer_dahil && <span className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full">🚌 Transfer</span>}
+                      {!p.otel_dahil && !p.ucus_dahil && !p.transfer_dahil && <span className="text-xs text-gray-300">—</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3">

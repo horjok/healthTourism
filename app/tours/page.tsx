@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 type Tour = {
   id: number;
@@ -58,17 +60,23 @@ const CATEGORIES_EN = ['All', 'Culture', 'Sea', 'Adventure', 'Spa', 'Gastronomy'
 export default function ToursPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
-  const { addItem } = useCartStore();
+  const { addItem, incrementQuantity, decrementQuantity, removeItem } = useCartStore();
+  const items = useCartStore(s => s.items);
+  const { formatla } = useDoviz();
+  const { isKlinikYoneticisi } = useKullaniciContext();
 
   const [city, setCity] = useState('Antalya');
   const [category, setCategory] = useState('Tümü');
-  const [added, setAdded] = useState<number[]>([]);
+  const [maxPrice, setMaxPrice] = useState(200);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
   const CATEGORIES = tr ? CATEGORIES_TR : CATEGORIES_EN;
 
   const filtered = TOURS.filter(t => {
     if (t.city !== city) return false;
+    if (t.price > maxPrice) return false;
     if (category === 'Tümü' || category === 'All') return true;
     const idx = (tr ? CATEGORIES_TR : CATEGORIES_EN).indexOf(category);
     return t.category === CATEGORIES_TR[idx];
@@ -88,8 +96,6 @@ export default function ToursPage() {
       unitPrice: t.price,
       quantity: qty,
     });
-    setAdded(prev => [...prev, t.id]);
-    setTimeout(() => setAdded(prev => prev.filter(id => id !== t.id)), 2000);
   }
 
   return (
@@ -129,8 +135,8 @@ export default function ToursPage() {
           ))}
         </div>
 
-        {/* Kategori filtreleri */}
-        <div className="flex gap-2 mb-8 flex-wrap">
+        {/* Kategori filtreleri + tarih aralığı + fiyat */}
+        <div className="flex gap-2 mb-4 flex-wrap">
           {CATEGORIES.map((cat) => (
             <button key={cat} onClick={() => setCategory(cat)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -143,10 +149,38 @@ export default function ToursPage() {
           ))}
         </div>
 
+        <div className="flex flex-wrap items-center gap-4 mb-8">
+          {/* Tarih aralığı */}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {tr ? 'Başlangıç' : 'Start'}
+            </span>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+              className="text-sm text-gray-700 focus:outline-none bg-transparent" />
+          </div>
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {tr ? 'Bitiş' : 'End'}
+            </span>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+              className="text-sm text-gray-700 focus:outline-none bg-transparent" />
+          </div>
+          {/* Fiyat aralığı */}
+          <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+              {tr ? `Maks. Fiyat: ${formatla(maxPrice)}` : `Max. Price: ${formatla(maxPrice)}`}
+            </span>
+            <input type="range" min="0" max="200" step="10"
+              value={maxPrice}
+              onChange={e => setMaxPrice(Number(e.target.value))}
+              className="w-28 accent-[#0f3460]" />
+          </div>
+        </div>
+
         {/* Tur kartları */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(t => {
-            const isAdded = added.includes(t.id);
+            const cartItem = items.find(i => i.id === `tour-${t.id}`);
             const qty = getQty(t.id);
             return (
               <div key={t.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -172,38 +206,41 @@ export default function ToursPage() {
                         <span className="text-xl font-extrabold text-green-600">{tr ? 'Ücretsiz' : 'Free'}</span>
                       ) : (
                         <>
-                          <span className="text-xl font-extrabold text-[#0f3460]">${t.price}</span>
+                          <span className="text-xl font-extrabold text-[#0f3460]">{formatla(t.price)}</span>
                           <span className="text-xs text-gray-400 ml-1">/{tr ? 'kişi' : 'person'}</span>
                         </>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Miktar seçici */}
-                      <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1">
-                        <button
-                          onClick={() => setQuantities(q => ({ ...q, [t.id]: Math.max(1, (q[t.id] || 1) - 1) }))}
-                          className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">
-                          −
-                        </button>
-                        <span className="text-sm font-bold text-gray-800 w-5 text-center">{qty}</span>
-                        <button
-                          onClick={() => setQuantities(q => ({ ...q, [t.id]: (q[t.id] || 1) + 1 }))}
-                          className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">
-                          +
+                    {!isKlinikYoneticisi && (cartItem ? (
+                      <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1">
+                          <button onClick={() => decrementQuantity(`tour-${t.id}`)}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">−</button>
+                          <span className="text-sm font-bold text-gray-800 w-5 text-center">{cartItem.quantity}</span>
+                          <button onClick={() => incrementQuantity(`tour-${t.id}`)}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">+</button>
+                        </div>
+                        <button onClick={() => removeItem(`tour-${t.id}`)}
+                          className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors">
+                          {tr ? 'Sepetten Çıkar' : 'Remove'}
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => addTour(t)}
-                        className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
-                          isAdded
-                            ? 'bg-green-500 text-white'
-                            : 'bg-[#0f3460] text-white hover:bg-[#0a1628]'
-                        }`}>
-                        {isAdded ? '✓' : (tr ? 'Ekle' : 'Add')}
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1">
+                          <button onClick={() => setQuantities(q => ({ ...q, [t.id]: Math.max(1, (q[t.id] || 1) - 1) }))}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">−</button>
+                          <span className="text-sm font-bold text-gray-800 w-5 text-center">{qty}</span>
+                          <button onClick={() => setQuantities(q => ({ ...q, [t.id]: (q[t.id] || 1) + 1 }))}
+                            className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">+</button>
+                        </div>
+                        <button onClick={() => addTour(t)}
+                          className="px-4 py-2 text-xs font-bold rounded-xl bg-[#0f3460] text-white hover:bg-[#0a1628] transition-all">
+                          {tr ? 'Ekle' : 'Add'}
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

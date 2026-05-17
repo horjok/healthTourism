@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       otel_isim: body.otel_isim ?? '',
       otel_dahil: body.otel_dahil ?? false,
       ucus_dahil: body.ucus_dahil ?? false,
+      transfer_dahil: body.transfer_dahil ?? false,
+      uzmanlik: body.uzmanlik ?? '',
       toplam_fiyat: Number(body.toplam_fiyat),
       sure_gun: Number(body.sure_gun),
       aciklama: body.aciklama ?? '',

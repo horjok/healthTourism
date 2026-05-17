@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { useDilContext } from '@/lib/DilContext';
+import { useDil } from '@/lib/i18n';
 import { useDoviz, type Para } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useChatContext } from '@/components/ui/ChatProvider';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 function CartBadge() {
   const [mounted, setMounted] = useState(false);
@@ -28,6 +29,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { dil, setDil } = useDilContext();
+  const { t } = useDil();
   const { para, setPara } = useDoviz();
   const tr = dil === 'tr';
 
@@ -40,9 +42,8 @@ export default function Navbar() {
 
   const { setChatAcik } = useChatContext();
 
+  const { kullanici, rol, yuklendi, isKlinikYoneticisi } = useKullaniciContext();
   const [menuAcik, setMenuAcik] = useState(false);
-  const [kullanici, setKullanici] = useState<User | null>(null);
-  const [yuklendi, setYuklendi] = useState(false);
 
 const LINKLER = [
   { etiket: tr ? 'Sağlık' : 'Health', href: '/health' },
@@ -52,18 +53,6 @@ const LINKLER = [
   { etiket: tr ? 'Transfer' : 'Transfer', href: '/transfer' },
   { etiket: tr ? 'Turlar' : 'Tours', href: '/tours' },
 ];
-
-  useEffect(() => {
-    const supabase = getSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setKullanici(data.user);
-      setYuklendi(true);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setKullanici(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   async function cikisYap() {
     const supabase = getSupabaseClient();
@@ -156,48 +145,64 @@ const LINKLER = [
           {/* Sağ alan (masaüstü) */}
           <div className="hidden md:flex items-center gap-3">
 
-            {/* Sepet ikonu */}
-            <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <CartBadge />
-            </Link>
+            {/* Sepet ikonu — klinik yöneticisine gösterilmez */}
+            {!isKlinikYoneticisi && (
+              <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <CartBadge />
+              </Link>
+            )}
 
             {!yuklendi ? (
               <div className="w-20 h-8 bg-gray-100 rounded-xl animate-pulse" />
             ) : kullanici ? (
               <>
+                {rol === 'super_admin' && (
+                  <Link href="/admin"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white">
+                    Admin
+                  </Link>
+                )}
+                {rol === 'clinic_manager' && (
+                  <Link href="/clinic"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white">
+                    {tr ? 'Klinik' : 'Clinic'}
+                  </Link>
+                )}
                 <Link href="/profile"
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     pathname === '/profile'
                       ? 'bg-[#0f3460] text-white'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-[#0f3460]'
                   }`}>
-                  {tr ? 'Profilim' : 'My Profile'}
+                  {t('nav.profil')}
                 </Link>
                 <button onClick={cikisYap}
                   className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors">
-                  {tr ? 'Çıkış' : 'Sign Out'}
+                  {t('nav.cikis')}
                 </button>
               </>
             ) : (
               <Link href="/auth"
                 className="px-4 py-2 bg-[#0f3460] text-white text-sm font-semibold rounded-xl hover:bg-[#16213e] transition-colors">
-                {tr ? 'Giriş Yap' : 'Sign In'}
+                {t('nav.giris')}
               </Link>
             )}
           </div>
 
           {/* Hamburger (mobil) */}
           <div className="md:hidden flex items-center gap-2">
-            {/* Mobil sepet */}
-            <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <CartBadge />
-            </Link>
+            {/* Mobil sepet — klinik yöneticisine gösterilmez */}
+            {!isKlinikYoneticisi && (
+              <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <CartBadge />
+              </Link>
+            )}
 
             <button
               onClick={() => setMenuAcik((p) => !p)}
@@ -233,19 +238,31 @@ const LINKLER = [
             <div className="border-t border-gray-100 mt-1 pt-2">
               {kullanici ? (
                 <>
+                  {rol === 'super_admin' && (
+                    <Link href="/admin" onClick={() => setMenuAcik(false)}
+                      className="block px-4 py-3 rounded-xl text-sm font-semibold border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460]/5">
+                      {tr ? 'Admin Paneli' : 'Admin Panel'}
+                    </Link>
+                  )}
+                  {rol === 'clinic_manager' && (
+                    <Link href="/clinic" onClick={() => setMenuAcik(false)}
+                      className="block px-4 py-3 rounded-xl text-sm font-semibold border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460]/5">
+                      {tr ? 'Klinik Paneli' : 'Clinic Panel'}
+                    </Link>
+                  )}
                   <Link href="/profile" onClick={() => setMenuAcik(false)}
                     className="block px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
-                    {tr ? 'Profilim' : 'My Profile'}
+                    {t('nav.profil')}
                   </Link>
                   <button onClick={cikisYap}
                     className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                    {tr ? 'Çıkış Yap' : 'Sign Out'}
+                    {t('nav.cikis')}
                   </button>
                 </>
               ) : (
                 <Link href="/auth" onClick={() => setMenuAcik(false)}
                   className="block px-4 py-3 rounded-xl text-sm font-semibold text-[#0f3460] hover:bg-blue-50">
-                  {tr ? 'Giriş Yap' : 'Sign In'}
+                  {t('nav.giris')}
                 </Link>
               )}
             </div>

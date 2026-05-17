@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Paket } from '@/lib/types';
 import { useCartStore } from '@/lib/cartStore';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 // ─── Skeleton loader ─────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ const UZMANLIK_RENK: Record<string, string> = {
 export default function PackageDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { addItem, items } = useCartStore();
+  const { isKlinikYoneticisi } = useKullaniciContext();
   const [paket, setPaket]         = useState<Paket | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [bulunamadi, setBulunamadi] = useState(false);
@@ -283,25 +285,29 @@ export default function PackageDetailPage({ params }: { params: { id: string } }
 
               {/* Aksiyon butonları */}
               <div className="px-6 py-5 space-y-3">
-                <button
-                  type="button"
-                  onClick={sepeteEkle}
-                  className={`block w-full py-4 text-center font-bold rounded-xl transition-colors text-base ${
-                    eklendi || sepette
-                      ? 'bg-green-500 text-white'
-                      : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
-                  }`}
-                >
-                  {eklendi ? '✓ Sepete Eklendi!' : sepette ? '✓ Sepette' : '+ Sepete Ekle'}
-                </button>
+                {!isKlinikYoneticisi && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={sepeteEkle}
+                      className={`block w-full py-4 text-center font-bold rounded-xl transition-colors text-base ${
+                        eklendi || sepette
+                          ? 'bg-green-500 text-white'
+                          : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
+                      }`}
+                    >
+                      {eklendi ? '✓ Sepete Eklendi!' : sepette ? '✓ Sepette' : '+ Sepete Ekle'}
+                    </button>
 
-                {sepette && (
-                  <Link
-                    href="/booking"
-                    className="block w-full py-3 border-2 border-[#0f3460] text-[#0f3460] text-center font-bold rounded-xl hover:bg-[#0f3460] hover:text-white transition-colors text-sm"
-                  >
-                    Sepete Git & Ödeme Yap →
-                  </Link>
+                    {sepette && (
+                      <Link
+                        href="/booking"
+                        className="block w-full py-3 border-2 border-[#0f3460] text-[#0f3460] text-center font-bold rounded-xl hover:bg-[#0f3460] hover:text-white transition-colors text-sm"
+                      >
+                        Sepete Git & Ödeme Yap →
+                      </Link>
+                    )}
+                  </>
                 )}
 
                 <p className="text-xs text-center text-gray-400">

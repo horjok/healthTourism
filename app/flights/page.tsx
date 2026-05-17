@@ -2,8 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import flights from '@/data/flights.json';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 type Flight = {
   id: number;
@@ -16,23 +18,29 @@ type Flight = {
   price: number;
   direct: boolean;
   color: string;
+  class: string;
 };
 
 const DESTINATIONS = ['İstanbul', 'Antalya', 'İzmir'];
 const AIRLINES = ['Tümü', 'Turkish Airlines', 'EasyJet', 'British Airways', 'Emirates', 'KLM', 'Lufthansa', 'Air France', 'Pegasus'];
+const CABIN_CLASSES = ['Tümü', 'Economy', 'Business', 'First'];
+const ORIGINS = Array.from(new Set((flights as Flight[]).map(f => f.from))).sort();
 
 export default function FlightsPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
-  const { addItem } = useCartStore();
+  const { addItem, incrementQuantity, decrementQuantity, removeItem } = useCartStore();
+  const items = useCartStore(s => s.items);
+  const { formatla } = useDoviz();
+  const { isKlinikYoneticisi } = useKullaniciContext();
 
   const [destination, setDestination] = useState('');
+  const [origin, setOrigin] = useState('');
   const [airline, setAirline] = useState('Tümü');
+  const [cabinClass, setCabinClass] = useState('Tümü');
   const [directOnly, setDirectOnly] = useState(false);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [sort, setSort] = useState<'price' | 'duration'>('price');
-  const [added, setAdded] = useState<number[]>([]);
-
   function addFlight(f: Flight) {
     addItem({
       id: `flight-${f.id}`,
@@ -42,19 +50,19 @@ export default function FlightsPage() {
       unitPrice: f.price,
       quantity: 1,
     });
-    setAdded(prev => [...prev, f.id]);
-    setTimeout(() => setAdded(prev => prev.filter(id => id !== f.id)), 2000);
   }
 
   const filtered = useMemo(() => {
     let list = flights as Flight[];
     if (destination) list = list.filter(f => f.to === destination);
+    if (origin) list = list.filter(f => f.from === origin);
     if (airline !== 'Tümü') list = list.filter(f => f.airline === airline);
+    if (cabinClass !== 'Tümü') list = list.filter(f => f.class === cabinClass);
     if (directOnly) list = list.filter(f => f.direct);
     list = list.filter(f => f.price <= maxPrice);
     if (sort === 'price') list = [...list].sort((a, b) => a.price - b.price);
     return list;
-  }, [destination, airline, directOnly, maxPrice, sort]);
+  }, [destination, origin, airline, cabinClass, directOnly, maxPrice, sort]);
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -85,6 +93,18 @@ export default function FlightsPage() {
             <h2 className="text-base font-bold text-gray-900 mb-6">
               {tr ? 'Filtrele' : 'Filter'}
             </h2>
+
+            {/* Kalkış yeri */}
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                {tr ? 'Kalkış Yeri' : 'Origin'}
+              </label>
+              <select value={origin} onChange={e => setOrigin(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 bg-white">
+                <option value="">{tr ? 'Tüm Kalkışlar' : 'All Origins'}</option>
+                {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
 
             {/* Varış noktası */}
             <div className="mb-6">
@@ -124,17 +144,32 @@ export default function FlightsPage() {
               </select>
             </div>
 
+            {/* Kabin sınıfı */}
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                {tr ? 'Kabin Sınıfı' : 'Cabin Class'}
+              </label>
+              <select value={cabinClass} onChange={e => setCabinClass(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 bg-white">
+                {CABIN_CLASSES.map(c => (
+                  <option key={c} value={c}>
+                    {c === 'Tümü' ? (tr ? 'Tüm Sınıflar' : 'All Classes') : c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Maks fiyat */}
             <div className="mb-6">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                {tr ? `Maks. Fiyat: $${maxPrice}` : `Max. Price: $${maxPrice}`}
+                {tr ? `Maks. Fiyat: ${formatla(maxPrice)}` : `Max. Price: ${formatla(maxPrice)}`}
               </label>
               <input type="range" min="100" max="1000" step="50"
                 value={maxPrice}
                 onChange={e => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-[#0f3460]" />
               <div className="flex justify-between text-xs text-gray-400 mt-1">
-                <span>$100</span><span>$1000</span>
+                <span>{formatla(100)}</span><span>{formatla(1000)}</span>
               </div>
             </div>
 
@@ -191,7 +226,7 @@ export default function FlightsPage() {
 
             <div className="space-y-4">
               {filtered.map(f => {
-                const isAdded = added.includes(f.id);
+                const cartItem = items.find(i => i.id === `flight-${f.id}`);
                 return (
                   <div key={f.id}
                     className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-5">
@@ -219,10 +254,19 @@ export default function FlightsPage() {
                             <span className="text-gray-400 text-sm">✈</span>
                             <div className="h-px bg-gray-300 flex-1" />
                           </div>
-                          <div className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                            f.direct ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {f.direct ? (tr ? 'Direkt' : 'Direct') : (tr ? 'Aktarmalı' : 'Connecting')}
+                          <div className="flex items-center gap-1">
+                            <div className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              f.direct ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {f.direct ? (tr ? 'Direkt' : 'Direct') : (tr ? 'Aktarmalı' : 'Connecting')}
+                            </div>
+                            <div className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              f.class === 'First' ? 'bg-purple-100 text-purple-700' :
+                              f.class === 'Business' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {f.class}
+                            </div>
                           </div>
                         </div>
                         <div className="text-center">
@@ -233,17 +277,28 @@ export default function FlightsPage() {
 
                       {/* Fiyat + buton */}
                       <div className="text-right shrink-0">
-                        <div className="text-2xl font-extrabold text-[#0f3460]">${f.price}</div>
+                        <div className="text-2xl font-extrabold text-[#0f3460]">{formatla(f.price)}</div>
                         <div className="text-xs text-gray-400 mb-2">{tr ? 'kişi başı' : 'per person'}</div>
-                        <button
-                          onClick={() => addFlight(f)}
-                          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
-                            isAdded
-                              ? 'bg-green-500 text-white'
-                              : 'bg-[#0f3460] text-white hover:bg-[#0a1628]'
-                          }`}>
-                          {isAdded ? '✓ ' + (tr ? 'Eklendi' : 'Added') : (tr ? 'Sepete Ekle' : 'Add to Cart')}
-                        </button>
+                        {!isKlinikYoneticisi && (cartItem ? (
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-1 bg-gray-100 rounded-xl px-2 py-1">
+                              <button onClick={() => decrementQuantity(`flight-${f.id}`)}
+                                className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">−</button>
+                              <span className="text-sm font-bold text-gray-800 w-5 text-center">{cartItem.quantity}</span>
+                              <button onClick={() => incrementQuantity(`flight-${f.id}`)}
+                                className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-sm font-bold text-gray-600 hover:bg-gray-50">+</button>
+                            </div>
+                            <button onClick={() => removeItem(`flight-${f.id}`)}
+                              className="px-4 py-1.5 text-xs font-bold rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-all border border-red-200">
+                              {tr ? 'Sepetten Çıkar' : 'Remove'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => addFlight(f)}
+                            className="px-4 py-2 text-xs font-bold rounded-xl bg-[#0f3460] text-white hover:bg-[#0a1628] transition-all">
+                            {tr ? 'Sepete Ekle' : 'Add to Cart'}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>

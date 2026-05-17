@@ -3,13 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 export default function TransferPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
   const router = useRouter();
   const { addItem } = useCartStore();
+  const { formatla } = useDoviz();
+  const { isKlinikYoneticisi } = useKullaniciContext();
   const [selected, setSelected] = useState<'normal' | 'vip' | null>(null);
   const [added, setAdded] = useState(false);
 
@@ -134,7 +138,7 @@ export default function TransferPage() {
               </ul>
 
               <div className="pt-4 border-t border-gray-100">
-                <span className="text-3xl font-extrabold text-[#0f3460]">${t.fiyat}</span>
+                <span className="text-3xl font-extrabold text-[#0f3460]">{formatla(t.fiyat)}</span>
                 <span className="text-sm text-gray-400 ml-2">/ {t.birim}</span>
               </div>
             </button>
@@ -143,6 +147,7 @@ export default function TransferPage() {
 
         {/* Sepete ekle butonu */}
         <div className="text-center">
+          {!isKlinikYoneticisi && (
           <button
             onClick={handleAdd}
             disabled={!selected || added}
@@ -157,6 +162,7 @@ export default function TransferPage() {
               ? '✓ ' + (tr ? 'Sepete Eklendi!' : 'Added to Cart!')
               : tr ? 'Sepete Ekle →' : 'Add to Cart →'}
           </button>
+          )}
 
           {!selected && (
             <p className="text-sm text-gray-400 mt-3">

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Paket } from '@/lib/types';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
+import { useChatContext } from '@/components/ui/ChatProvider';
 
 function PaketKarti({ paket, dil }: { paket: Paket; dil: 'tr' | 'en' }) {
   const { formatla } = useDoviz();
@@ -53,6 +54,7 @@ function PaketKarti({ paket, dil }: { paket: Paket; dil: 'tr' | 'en' }) {
 
 export default function HomePage() {
   const { dil } = useDilContext();
+  const { setChatAcik } = useChatContext();
   const [paketler, setPaketler] = useState<Paket[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [hata, setHata] = useState(false);
@@ -73,7 +75,7 @@ export default function HomePage() {
   const KATEGORILER = [
     { ikon: '💆', isim: tr ? 'Saç Ekimi' : 'Hair Transplant', aciklama: tr ? 'FUE, DHI, Safir teknikler' : 'FUE, DHI, Sapphire techniques', slug: 'saç ekimi', renk: 'from-purple-500 to-purple-700' },
     { ikon: '🦷', isim: tr ? 'Diş Sağlığı' : 'Dental Health', aciklama: tr ? 'İmplant, Hollywood Smile' : 'Implant, Hollywood Smile', slug: 'diş', renk: 'from-blue-500 to-blue-700' },
-    { ikon: '✨', isim: tr ? 'Estetik Cerrahi' : 'Aesthetic Surgery', aciklama: tr ? 'Rinoplasti, Liposuction' : 'Rhinoplasty, Liposuction', slug: 'estetik', renk: 'from-pink-500 to-pink-700' },
+    { ikon: '✨', isim: tr ? 'Estetik Cerrahi' : 'Aesthetic Surgery', aciklama: tr ? 'Rinoplasti, Liposuction' : 'Rhinoplasty, Liposuction', slug: 'estetik cerrahi', renk: 'from-pink-500 to-pink-700' },
     { ikon: '👁️', isim: tr ? 'Göz Tedavisi' : 'Eye Treatment', aciklama: tr ? 'LASIK, Katarakt' : 'LASIK, Cataract', slug: 'göz', renk: 'from-teal-500 to-teal-700' },
   ];
 
@@ -124,10 +126,11 @@ export default function HomePage() {
             className="px-10 py-4 bg-white text-[#0f3460] font-bold rounded-2xl hover:bg-blue-50 transition-all text-base shadow-2xl hover:scale-105">
             {tr ? 'Paketleri Keşfet →' : 'Explore Packages →'}
           </Link>
-          <Link href="/packages?chat=true"
+          <button
+            onClick={() => setChatAcik(true)}
             className="px-10 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-2xl hover:opacity-90 transition-all text-base shadow-xl hover:scale-105">
             ✨ {tr ? 'AI ile Paket Bul' : 'Find with AI'}
-          </Link>
+          </button>
         </div>
 
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 w-full max-w-3xl">
@@ -370,10 +373,11 @@ export default function HomePage() {
             <p className="text-blue-100/80 mb-10 text-lg max-w-md mx-auto">
               {tr ? 'AI asistanımız şikayetinizi analiz edip size özel paket önersin' : 'Our AI assistant analyzes your concern and suggests a personalized package'}
             </p>
-            <Link href="/packages?chat=true"
-              className="inline-block px-12 py-5 bg-white text-[#0f3460] font-extrabold rounded-2xl hover:bg-blue-50 transition-all text-lg shadow-xl hover:scale-105">
+            <button
+              onClick={() => setChatAcik(true)}
+              className="px-12 py-5 bg-white text-[#0f3460] font-extrabold rounded-2xl hover:bg-blue-50 transition-all text-lg shadow-xl hover:scale-105">
               ✨ {tr ? 'AI ile Paket Bul — Ücretsiz' : 'Find Package with AI — Free'}
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -388,7 +392,7 @@ export default function HomePage() {
             </div>
             <div className="flex gap-6 text-sm text-gray-400">
               <Link href="/packages" className="hover:text-white transition-colors">{tr ? 'Paketler' : 'Packages'}</Link>
-              <Link href="/packages?chat=true" className="hover:text-white transition-colors">{tr ? 'AI Öneri' : 'AI Suggestion'}</Link>
+              <button onClick={() => setChatAcik(true)} className="hover:text-white transition-colors">{tr ? 'AI Öneri' : 'AI Suggestion'}</button>
               <Link href="/auth" className="hover:text-white transition-colors">{tr ? 'Giriş Yap' : 'Sign In'}</Link>
             </div>
             <p className="text-gray-500 text-sm">© 2025 HealthTour</p>
