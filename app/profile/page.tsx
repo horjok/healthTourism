@@ -152,6 +152,7 @@ export default function ProfilePage() {
   const [sekme, setSekme]                   = useState<Sekme>('rezervasyonlar');
 
   const [iptalDurum, setIptalDurum] = useState<Record<string, string>>({});
+  const [silDurum, setSilDurum]     = useState<Record<string, string>>({});
 
   // Yorum modalı
   const [yorumModal, setYorumModal] = useState<{ rezId: string; klinikId: string; klinikIsim: string } | null>(null);
@@ -201,6 +202,23 @@ export default function ProfilePage() {
       }
     });
   }, [router]);
+
+  async function silRezervasyonu(rezId: string) {
+    setSilDurum((prev) => ({ ...prev, [rezId]: 'yukleniyor' }));
+    try {
+      const res = await fetch('/api/booking', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rezId }),
+      });
+      const json = await res.json() as { success: boolean; error?: string };
+      if (!json.success) throw new Error(json.error);
+      setRezervasyonlar((prev) => prev.filter((r) => r.id !== rezId));
+      setSilDurum((prev) => { const s = { ...prev }; delete s[rezId]; return s; });
+    } catch {
+      setSilDurum((prev) => ({ ...prev, [rezId]: 'hata' }));
+    }
+  }
 
   async function iptalEt(rezId: string) {
     if (!kullanici) return;
@@ -532,6 +550,27 @@ export default function ProfilePage() {
                                       </button>
                                     </>
                                   )}
+
+                                  {iptalEdildi && (() => {
+                                    const silYukleniyor = silDurum[rez.id] === 'yukleniyor';
+                                    const silHata = silDurum[rez.id] === 'hata';
+                                    return (
+                                      <>
+                                        {silHata && (
+                                          <p className="text-xs text-red-500">Silinemedi. Tekrar deneyin.</p>
+                                        )}
+                                        <button
+                                          onClick={() => silRezervasyonu(rez.id)}
+                                          disabled={silYukleniyor}
+                                          className="py-2 border border-gray-300 text-gray-500 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                          {silYukleniyor ? (
+                                            <><div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /><span>Siliniyor...</span></>
+                                          ) : '🗑 Kaydı Sil'}
+                                        </button>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             );

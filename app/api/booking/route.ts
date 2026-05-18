@@ -83,3 +83,27 @@ export async function GET() {
     return fail('Rezervasyonlar getirilemedi', e);
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const guard = await requireAuth();
+  if ('error' in guard) return guard.error;
+
+  try {
+    const body = (await req.json()) as { id: string };
+    if (!body.id) return err('id zorunludur', 400);
+
+    const sb = await createServerSupabase();
+    // RLS policy sadece kendi iptal edilmiş rezervasyonlarını siler
+    const { error } = await sb
+      .from('rezervasyonlar')
+      .delete()
+      .eq('id', body.id)
+      .eq('kullanici_id', guard.ctx.userId)
+      .eq('durum', 'iptal');
+
+    if (error) throw new Error(error.message);
+    return ok({ silindi: true });
+  } catch (e) {
+    return fail('Rezervasyon silinemedi', e);
+  }
+}
