@@ -66,6 +66,8 @@ const LINKLER = [
     return pathname === href.split('?')[0];
   }
 
+  const isAnaKayfa = pathname === '/';
+
   return (
     <>
       {/* Döviz + TR/EN seçiciler — sabit pozisyon */}
@@ -79,46 +81,57 @@ const LINKLER = [
           onChange={e => setPara(e.target.value as Para)}
           style={{
             padding: '5px 8px', borderRadius: '9px', fontWeight: 'bold',
-            fontSize: '12px', border: '1px solid #e5e7eb', cursor: 'pointer',
-            background: '#f3f4f6', color: '#374151', outline: 'none',
+            fontSize: '12px', border: isAnaKayfa ? '1px solid rgba(255,255,255,0.2)' : '1px solid #e5e7eb',
+            cursor: 'pointer',
+            background: isAnaKayfa ? 'rgba(255,255,255,0.1)' : '#f3f4f6',
+            color: isAnaKayfa ? 'white' : '#374151',
+            outline: 'none',
+            backdropFilter: isAnaKayfa ? 'blur(8px)' : 'none',
           }}
         >
           {PARALAR.map(p => (
-            <option key={p.kod} value={p.kod}>{p.etiket}</option>
+            <option key={p.kod} value={p.kod} style={{ background: '#0f172a', color: 'white' }}>{p.etiket}</option>
           ))}
         </select>
 
         {/* TR/EN butonları */}
         <div style={{
-          display: 'flex', gap: '2px', background: '#f3f4f6',
-          borderRadius: '12px', padding: '3px'
+          display: 'flex', gap: '2px',
+          background: isAnaKayfa ? 'rgba(255,255,255,0.1)' : '#f3f4f6',
+          borderRadius: '12px', padding: '3px',
+          border: isAnaKayfa ? '1px solid rgba(255,255,255,0.15)' : 'none',
+          backdropFilter: isAnaKayfa ? 'blur(8px)' : 'none',
         }}>
           <button
             onClick={() => setDil('tr')}
             style={{
               padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
               fontSize: '12px', border: 'none', cursor: 'pointer',
-              background: dil === 'tr' ? '#0f3460' : 'transparent',
-              color: dil === 'tr' ? 'white' : '#666'
+              background: dil === 'tr' ? (isAnaKayfa ? 'white' : '#0f3460') : 'transparent',
+              color: dil === 'tr' ? (isAnaKayfa ? '#0f172a' : 'white') : (isAnaKayfa ? 'rgba(255,255,255,0.7)' : '#666'),
             }}>TR</button>
           <button
             onClick={() => setDil('en')}
             style={{
               padding: '5px 12px', borderRadius: '9px', fontWeight: 'bold',
               fontSize: '12px', border: 'none', cursor: 'pointer',
-              background: dil === 'en' ? '#0f3460' : 'transparent',
-              color: dil === 'en' ? 'white' : '#666'
+              background: dil === 'en' ? (isAnaKayfa ? 'white' : '#0f3460') : 'transparent',
+              color: dil === 'en' ? (isAnaKayfa ? '#0f172a' : 'white') : (isAnaKayfa ? 'rgba(255,255,255,0.7)' : '#666'),
             }}>EN</button>
         </div>
       </div>
 
-      <nav className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-100">
+      <nav className={`sticky top-0 z-30 transition-colors ${
+        isAnaKayfa
+          ? 'bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10'
+          : 'bg-white shadow-sm border-b border-gray-100'
+      }`}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-xl font-extrabold text-[#0f3460] tracking-tight">
-              Health<span className="text-blue-400">Tour</span>
+            <span className={`text-xl font-extrabold tracking-tight ${isAnaKayfa ? 'text-white' : 'text-[#0f3460]'}`}>
+              Health<span className={isAnaKayfa ? 'text-amber-400' : 'text-blue-400'}>Tour</span>
             </span>
           </Link>
 
@@ -128,15 +141,19 @@ const LINKLER = [
               <Link key={link.href} href={link.href}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                   aktifMi(link.href)
-                    ? 'bg-[#0f3460] text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-[#0f3460]'
+                    ? isAnaKayfa ? 'bg-white/15 text-white' : 'bg-[#0f3460] text-white'
+                    : isAnaKayfa ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-[#0f3460]'
                 }`}>
                 {link.etiket}
               </Link>
             ))}
             <button
               onClick={() => setChatAcik(true)}
-              className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-gradient-to-r from-[#0f3460] to-blue-500 text-white hover:opacity-90"
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                isAnaKayfa
+                  ? 'bg-amber-500 text-[#0f172a] hover:bg-amber-400 glow-gold'
+                  : 'bg-gradient-to-r from-[#0f3460] to-blue-500 text-white hover:opacity-90'
+              }`}
             >
               {tr ? '✨ AI Öneri' : '✨ AI Suggestion'}
             </button>
@@ -147,8 +164,8 @@ const LINKLER = [
 
             {/* Sepet ikonu — klinik yöneticisine gösterilmez */}
             {!isKlinikYoneticisi && (
-              <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link href="/cart" className={`relative p-2 rounded-xl transition-colors ${isAnaKayfa ? 'text-white/80 hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isAnaKayfa ? 'text-white/80' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 <CartBadge />
@@ -159,32 +176,48 @@ const LINKLER = [
               <>
                 {rol === 'super_admin' && (
                   <Link href="/admin"
-                    className="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white">
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
+                      isAnaKayfa
+                        ? 'border border-white/20 text-white hover:bg-white/10'
+                        : 'border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white'
+                    }`}>
                     Admin
                   </Link>
                 )}
                 {rol === 'clinic_manager' && (
                   <Link href="/clinic"
-                    className="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white">
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors ${
+                      isAnaKayfa
+                        ? 'border border-white/20 text-white hover:bg-white/10'
+                        : 'border border-[#0f3460]/30 text-[#0f3460] hover:bg-[#0f3460] hover:text-white'
+                    }`}>
                     {tr ? 'Klinik' : 'Clinic'}
                   </Link>
                 )}
                 <Link href="/profile"
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     pathname === '/profile'
-                      ? 'bg-[#0f3460] text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-[#0f3460]'
+                      ? isAnaKayfa ? 'bg-white/15 text-white' : 'bg-[#0f3460] text-white'
+                      : isAnaKayfa ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-[#0f3460]'
                   }`}>
                   {t('nav.profil')}
                 </Link>
                 <button onClick={cikisYap}
-                  className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                  className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                    isAnaKayfa
+                      ? 'border border-white/20 text-white/70 hover:border-red-400/50 hover:text-red-400'
+                      : 'border border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-red-600 hover:border-red-200'
+                  }`}>
                   {t('nav.cikis')}
                 </button>
               </>
             ) : (
               <Link href="/auth"
-                className="px-4 py-2 bg-[#0f3460] text-white text-sm font-semibold rounded-xl hover:bg-[#16213e] transition-colors">
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                  isAnaKayfa
+                    ? 'bg-amber-500 text-[#0f172a] hover:bg-amber-400'
+                    : 'bg-[#0f3460] text-white hover:bg-[#16213e]'
+                }`}>
                 {t('nav.giris')}
               </Link>
             )}
@@ -194,8 +227,8 @@ const LINKLER = [
           <div className="md:hidden flex items-center gap-2">
             {/* Mobil sepet — klinik yöneticisine gösterilmez */}
             {!isKlinikYoneticisi && (
-              <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link href="/cart" className={`relative p-2 rounded-xl transition-colors ${isAnaKayfa ? 'text-white/80 hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isAnaKayfa ? 'text-white/80' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 <CartBadge />
@@ -204,31 +237,33 @@ const LINKLER = [
 
             <button
               onClick={() => setMenuAcik((p) => !p)}
-              className="flex flex-col justify-center items-center w-9 h-9 gap-1.5 rounded-xl hover:bg-gray-100 transition-colors">
-              <span className={`block h-0.5 w-5 bg-gray-700 rounded-full transition-transform duration-200 ${menuAcik ? 'translate-y-2 rotate-45' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-700 rounded-full transition-opacity duration-200 ${menuAcik ? 'opacity-0' : ''}`} />
-              <span className={`block h-0.5 w-5 bg-gray-700 rounded-full transition-transform duration-200 ${menuAcik ? '-translate-y-2 -rotate-45' : ''}`} />
+              className={`flex flex-col justify-center items-center w-9 h-9 gap-1.5 rounded-xl transition-colors ${isAnaKayfa ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}>
+              <span className={`block h-0.5 w-5 rounded-full transition-transform duration-200 ${isAnaKayfa ? 'bg-white' : 'bg-gray-700'} ${menuAcik ? 'translate-y-2 rotate-45' : ''}`} />
+              <span className={`block h-0.5 w-5 rounded-full transition-opacity duration-200 ${isAnaKayfa ? 'bg-white' : 'bg-gray-700'} ${menuAcik ? 'opacity-0' : ''}`} />
+              <span className={`block h-0.5 w-5 rounded-full transition-transform duration-200 ${isAnaKayfa ? 'bg-white' : 'bg-gray-700'} ${menuAcik ? '-translate-y-2 -rotate-45' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* Mobil menü */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuAcik ? 'max-h-96 border-t border-gray-100' : 'max-h-0'}`}>
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuAcik ? 'max-h-96' : 'max-h-0'} ${isAnaKayfa ? 'border-t border-white/10' : 'border-t border-gray-100'}`}>
           <div className="px-6 py-3 flex flex-col gap-1">
             {LINKLER.map((link) => (
               <Link key={link.href} href={link.href}
                 onClick={() => setMenuAcik(false)}
                 className={`px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
                   aktifMi(link.href)
-                    ? 'bg-[#0f3460] text-white'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? isAnaKayfa ? 'bg-white/15 text-white' : 'bg-[#0f3460] text-white'
+                    : isAnaKayfa ? 'text-white/80 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-50'
                 }`}>
                 {link.etiket}
               </Link>
             ))}
             <button
               onClick={() => { setChatAcik(true); setMenuAcik(false); }}
-              className="text-left px-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#0f3460] to-blue-500 text-white"
+              className={`text-left px-4 py-3 rounded-xl text-sm font-semibold ${
+                isAnaKayfa ? 'bg-amber-500 text-[#0f172a]' : 'bg-gradient-to-r from-[#0f3460] to-blue-500 text-white'
+              }`}
             >
               {tr ? '✨ AI Öneri' : '✨ AI Suggestion'}
             </button>

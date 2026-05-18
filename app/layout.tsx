@@ -1,6 +1,7 @@
 
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { DM_Serif_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/ui/Navbar";
 import ChatProvider from "@/components/ui/ChatProvider";
@@ -18,6 +19,19 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+const dmSerif = DM_Serif_Display({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: "--font-dm-serif",
+  display: "swap",
+});
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "HealthTour — Sağlık Turizmi Platformu",
@@ -27,7 +41,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${dmSerif.variable} ${manrope.variable} antialiased`}>
         <DilProvider>
           <DovizProvider>
             <KullaniciProvider>

@@ -5,11 +5,66 @@
 body {
   color: #171717;
   background: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .glow-gold {
+    box-shadow: 0 0 0 1px rgba(217,119,6,0.5), 0 0 24px -2px rgba(217,119,6,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 0 1px rgba(8,145,178,0.4), 0 0 30px -5px rgba(8,145,178,0.55);
+  }
+}
+
+/* Hero arka plan degradesi */
+.hero-bg {
+  background:
+    radial-gradient(ellipse at top right, rgba(8,145,178,0.45), transparent 55%),
+    radial-gradient(ellipse at bottom left, rgba(217,119,6,0.18), transparent 50%),
+    linear-gradient(180deg, #0a1124 0%, #0f172a 60%, #0a0f1f 100%);
+}
+
+/* Grain doku efekti */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+/* Magazine kart hover parlayan sınır efekti */
+.mag-card {
+  position: relative;
+}
+.mag-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.25rem;
+  background: linear-gradient(120deg, transparent 30%, rgba(217,119,6,0.7), rgba(8,145,178,0.7), transparent 70%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  transition: opacity .6s ease, background-position 1.2s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+.mag-card:hover::before {
+  opacity: 1;
+  background-position: 0 0;
+}
+.mag-card > * {
+  position: relative;
+  z-index: 1;
 }

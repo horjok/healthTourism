@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PipelineSonucu } from '@/lib/types';
 import { useDoviz } from '@/lib/DovizContext';
+import { useChatContext } from '@/components/ui/ChatProvider';
 import TurkeyFlightLoader from './TurkeyFlightLoader';
 
 interface ChatEkraniProps {
@@ -53,6 +54,7 @@ function AdimGostergesi({ aktif }: { aktif: 1 | 2 | 3 }) {
 export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
   const router = useRouter();
   const { sembol, kur, para } = useDoviz();
+  const { onAcilMesaj, setOnAcilMesaj } = useChatContext();
 
   const [adim, setAdim]               = useState<Adim>(1);
   const [sikayet, setSikayet]         = useState('');
@@ -65,6 +67,15 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tanimaRef = useRef<any>(null);
+
+  // Panel'den gelen ön-dolu mesajı uygula: adım 1'i atla, adım 2'den başla
+  useEffect(() => {
+    if (!isOpen || !onAcilMesaj) return;
+    setSikayet(onAcilMesaj);
+    setAdim(2);
+    setOnAcilMesaj('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   function kapat() {
     onClose();
@@ -114,12 +125,6 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
     finally { setYukleniyor(false); }
   }
 
-  function paketlereGit() {
-    if (!sonuc) return;
-    kapat();
-    router.push(`/packages?uzmanlik=${encodeURIComponent(sonuc.uzmanlik_alani)}`);
-  }
-
   // Slider değerleri — EUR baz, kur ile lokalleştir
   const butceLokale = Math.round(butceEur * kur);
   const sliderMin   = Math.round(SLIDER_MIN_EUR  * kur);
@@ -147,47 +152,86 @@ export default function ChatEkrani({ isOpen, onClose }: ChatEkraniProps) {
     }
 
     if (adim === 'sonuc' && sonuc) {
-      const ilkPaket = sonuc.onerilen_paketler[0];
+      const paketVar = sonuc.onerilen_paketler.length > 0;
       return (
         <div className="flex flex-col gap-4 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-blue-50 rounded-2xl p-4">
-              <p className="text-xs text-blue-500 font-semibold uppercase tracking-wide mb-1">Uzmanlık</p>
-              <p className="text-[#0f3460] font-bold capitalize">{sonuc.uzmanlik_alani}</p>
+
+          {/* AI özet metni */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">✨</span>
+              <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">AI Değerlendirmesi</p>
+              <span className="ml-auto text-xs bg-white text-purple-600 font-bold px-2 py-0.5 rounded-full border border-purple-100">
+                %{sonuc.guvenilirlik_skoru} güvenilir
+              </span>
             </div>
-            <div className="bg-purple-50 rounded-2xl p-4">
-              <p className="text-xs text-purple-500 font-semibold uppercase tracking-wide mb-1">Güvenilirlik</p>
-              <p className="text-purple-700 font-bold">%{sonuc.guvenilirlik_skoru}</p>
-            </div>
-            {ilkPaket && (
-              <>
-                <div className="bg-green-50 rounded-2xl p-4">
-                  <p className="text-xs text-green-500 font-semibold uppercase tracking-wide mb-1">Önerilen Klinik</p>
-                  <p className="text-green-700 font-bold text-sm leading-snug">{ilkPaket.klinik_isim}</p>
-                </div>
-                <div className="bg-amber-50 rounded-2xl p-4">
-                  <p className="text-xs text-amber-500 font-semibold uppercase tracking-wide mb-1">Tahmini Maliyet</p>
-                  <p className="text-amber-700 font-bold text-sm">{ilkPaket.tahmini_fiyat}</p>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">AI Değerlendirmesi</p>
             <p className="text-gray-700 text-sm leading-relaxed">{sonuc.oneri_ozeti}</p>
           </div>
+
+          {/* Uyarılar */}
           {sonuc.uyarilar.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 space-y-1">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-3 space-y-1">
               {sonuc.uyarilar.map((u, i) => <p key={i} className="text-yellow-700 text-xs">⚠ {u}</p>)}
             </div>
           )}
-          <button onClick={paketlereGit}
-            className="w-full py-3.5 bg-[#0f3460] text-white font-bold rounded-xl hover:bg-[#16213e] transition-colors mt-auto">
-            Paketleri Gör →
-          </button>
+
+          {/* Paket kartları */}
+          {paketVar ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                Önerilen Paketler ({sonuc.onerilen_paketler.length})
+              </p>
+              {sonuc.onerilen_paketler.map((p, idx) => (
+                <div
+                  key={p.paket_id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                >
+                  {/* Kart başlığı */}
+                  <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                    <span className="w-5 h-5 rounded-full bg-[#0f3460] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <p className="text-sm font-bold text-gray-900 leading-tight flex-1">{p.baslik}</p>
+                  </div>
+
+                  {/* Meta bilgiler */}
+                  <div className="flex items-center gap-3 px-4 pb-2 text-xs text-gray-500 flex-wrap">
+                    <span>📍 {p.sehir}</span>
+                    <span>🏥 {p.klinik_isim}</span>
+                    <span>📅 {p.sure_gun} gün</span>
+                  </div>
+
+                  {/* Avantaj etiketleri */}
+                  <div className="flex flex-wrap gap-1.5 px-4 pb-3">
+                    {p.avantajlar.map((a, i) => (
+                      <span key={i} className="bg-blue-50 text-[#0f3460] text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Fiyat + inceleme butonu */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50 bg-gray-50/50">
+                    <span className="text-lg font-extrabold text-[#0f3460]">{p.tahmini_fiyat}</span>
+                    <button
+                      onClick={() => { kapat(); router.push(`/packages/${p.paket_id}`); }}
+                      className="text-xs font-bold px-4 py-2 bg-[#0f3460] text-white rounded-xl hover:bg-[#16213e] transition-colors"
+                    >
+                      İncele →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-2xl p-5 text-center text-sm text-gray-500">
+              Kriterlere uygun paket bulunamadı. Bütçenizi yükseltmeyi veya şehir filtresini kaldırmayı deneyin.
+            </div>
+          )}
+
           <button onClick={() => { setAdim(1); setSonuc(null); }}
-            className="text-sm text-center text-gray-400 hover:text-gray-600">
-            Yeniden analiz et
+            className="text-sm text-center text-gray-400 hover:text-gray-600 mt-auto pt-1">
+            ← Yeniden analiz et
           </button>
         </div>
       );

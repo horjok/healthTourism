@@ -11,6 +11,14 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        navy:   '#0f172a',
+        aegean: '#0891b2',
+        pearl:  '#f8fafc',
+        gold:   '#d97706',
+      },
+      fontFamily: {
+        sans:  ['var(--font-manrope)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-dm-serif)', 'ui-serif', 'Georgia', 'serif'],
       },
       animation: {
         marquee: 'marquee 40s linear infinite',
