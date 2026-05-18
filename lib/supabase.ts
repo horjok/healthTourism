@@ -38,7 +38,9 @@ export async function getKlinikById(id: string, sb: SupabaseClient = getPublicSu
 // ─── Paketler (public okuma) ─────────────────────────────────────────────────
 
 interface PaketFiltreler {
-  uzmanlik?: string;
+  uzmanlik?: string;        // klinikler.uzmanlik array-contains filtresi
+  paket_uzmanlik?: string;  // paketler.uzmanlik tam eşleşme
+  baslik_arama?: string;    // paketler.baslik ILIKE araması
   max_fiyat?: number;
   tarih?: string;
   klinik_id?: string;
@@ -76,6 +78,8 @@ export async function getPaketler(
     query = query.in('klinik_id', ids);
   }
 
+  if (filtreler?.paket_uzmanlik) query = query.eq('uzmanlik', filtreler.paket_uzmanlik);
+  if (filtreler?.baslik_arama)  query = query.ilike('baslik', `%${filtreler.baslik_arama}%`);
   if (filtreler?.max_fiyat !== undefined)  query = query.lte('toplam_fiyat', filtreler.max_fiyat);
   if (filtreler?.tarih)                    query = query.gte('tarih', filtreler.tarih);
   if (filtreler?.ucus_dahil !== undefined) query = query.eq('ucus_dahil', filtreler.ucus_dahil);

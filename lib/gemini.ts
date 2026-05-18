@@ -1,7 +1,62 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { CikarimSonucu, Klinik, Paket, PipelineSonucu, PaketOnerisi } from './types';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// ─── Çoklu Anahtar & Model Yapılandırması ────────────────────────────────────
+
+const API_ANAHTARLARI = [
+  process.env.GEMINI_API_KEY_1,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY, // geriye dönük uyumluluk
+].filter((k): k is string => Boolean(k));
+
+const MODELLER = [
+  'gemini-3.1-flash-lite',
+  'gemini-3-flash-preview',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+] as const;
+
+class GeminiFallbackHatasi extends Error {
+  constructor() {
+    super('Tüm Gemini API anahtarları ve modelleri başarısız oldu');
+    this.name = 'GeminiFallbackHatasi';
+  }
+}
+
+// Tekil model denemesi için timeout (asılı kalan preview modellere karşı)
+const DENEME_TIMEOUT_MS = 8_000;
+
+// Her anahtar için tüm modelleri sırayla dener; ilk başarılı yanıtı döndürür
+async function callGeminiWithFallback(
+  prompt: string,
+  sistemTalimati?: string
+): Promise<string> {
+  for (let ki = 0; ki < API_ANAHTARLARI.length; ki++) {
+    const anahtar = API_ANAHTARLARI[ki];
+    for (const model of MODELLER) {
+      try {
+        const istemci = new GoogleGenerativeAI(anahtar);
+        const uretici = istemci.getGenerativeModel({
+          model,
+          ...(sistemTalimati ? { systemInstruction: sistemTalimati } : {}),
+        });
+        let timer: ReturnType<typeof setTimeout>;
+        const sonuc = await Promise.race([
+          uretici.generateContent(prompt),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error('deneme_timeout')), DENEME_TIMEOUT_MS);
+          }),
+        ]).finally(() => clearTimeout(timer));
+        return sonuc.response.text();
+      } catch {
+        console.warn(`Gemini: Anahtar ${ki + 1}, Model ${model} başarısız`);
+      }
+    }
+  }
+  throw new GeminiFallbackHatasi();
+}
 
 // ─── Domain guardrail — tüm kullanıcıya yönelik modellerde zorunlu ────────────
 const SISTEM_TALIMATI = `Sen HealthTour platformunun yapay zeka asistanısın.
@@ -18,14 +73,6 @@ KESINLIKLE YASAK:
 
 Kapsam dışı her soruda bire bir şu yanıtı ver, fazlasını ekleme:
 "Sadece sağlık turizmi, klinik paketleri ve seyahat planlaması hakkında yardımcı olabilirim."`;
-
-export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-// Kullanıcıya yönelik tüm metin üretiminde domain guard aktif
-const geminiGuardedModel = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
-  systemInstruction: SISTEM_TALIMATI,
-});
 
 // ─── Yardımcı fonksiyonlar ────────────────────────────────────────────────────
 
@@ -64,17 +111,14 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
   "oncelik": "dusuk | orta | yuksek"
 }`;
 
-  const result = await withTimeout(
-    geminiModel.generateContent(prompt),
+  const ham = await withTimeout(
+    callGeminiWithFallback(prompt),
     'Sağlık analizi zaman aşımına uğradı, lütfen tekrar deneyin'
   );
-
-  const ham = result.response.text();
 
   try {
     return JSON.parse(jsonTemizle(ham)) as SaglikAnalizi;
   } catch {
-    // JSON parse başarısız olursa fallback
     return { uzmanlik: 'genel', aciklama: ham.slice(0, 200), oncelik: 'orta' };
   }
 }
@@ -126,18 +170,16 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
   "gerekce": "neden bu klinikleri önerdiğini 2-3 cümle ile açıkla"
 }`;
 
-  const result = await withTimeout(
-    geminiModel.generateContent(prompt),
+  const ham = await withTimeout(
+    callGeminiWithFallback(prompt),
     'Paket planlaması zaman aşımına uğradı, lütfen tekrar deneyin'
   );
-
-  const ham = result.response.text();
 
   try {
     return JSON.parse(jsonTemizle(ham)) as PaketPlani;
   } catch {
     return {
-      onerilen_paketler: [{ klinik_isim: 'Belirsiz', tahmini_fiyat: '-', avantajlar: [] }],
+      onerilen_paketler: [{ paket_id: '', baslik: 'Belirsiz', klinik_isim: 'Belirsiz', sehir: '-', tahmini_fiyat: '-', sure_gun: 0, avantajlar: [] }],
       gerekce: ham.slice(0, 300),
     };
   }
@@ -187,12 +229,10 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
   "ozet": "kısa Türkçe değerlendirme (1-2 cümle)"
 }`;
 
-  const result = await withTimeout(
-    geminiModel.generateContent(prompt),
+  const ham = await withTimeout(
+    callGeminiWithFallback(prompt),
     'Güvenilirlik kontrolü zaman aşımına uğradı, lütfen tekrar deneyin'
   );
-
-  const ham = result.response.text();
 
   try {
     return JSON.parse(jsonTemizle(ham)) as GuvenilirlikRaporu;
@@ -209,7 +249,6 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
 // ─── Mock Pipeline (Gemini API yokken) ───────────────────────────────────────
 
 function mockPipeline(mesaj: string, klinikler: Klinik[], butce?: number): PipelineSonucu {
-  // Şikayete göre uzmanlık alanını basit kural tabanlı belirle
   const mesajKucuk = mesaj.toLocaleLowerCase('tr-TR');
   let uzmanlik = 'ortopedi';
   if (mesajKucuk.match(/diş|implant|çene|ortodon/))        uzmanlik = 'diş';
@@ -217,15 +256,18 @@ function mockPipeline(mesaj: string, klinikler: Klinik[], butce?: number): Pipel
   else if (mesajKucuk.match(/kalp|kardiyoloji|tansiyon/))  uzmanlik = 'kardiyoloji';
   else if (mesajKucuk.match(/estetik|burun|yüz|liposuction/)) uzmanlik = 'estetik cerrahi';
 
-  // Bütçeye ve uzmanlığa uygun klinikleri filtrele
   const uygunKlinikler = klinikler
     .filter((k) => k.uzmanlik.some((u) => u.toLocaleLowerCase('tr-TR').includes(uzmanlik.split(' ')[0])))
     .sort((a, b) => b.puan - a.puan)
     .slice(0, 3);
 
   const oneriler: PaketOnerisi[] = uygunKlinikler.map((k) => ({
+    paket_id: '',
+    baslik: `${uzmanlik.charAt(0).toUpperCase() + uzmanlik.slice(1)} Paketi`,
     klinik_isim: k.isim,
+    sehir: k.sehir,
     tahmini_fiyat: k.fiyat_aralik,
+    sure_gun: 7,
     avantajlar: [
       k.akredite ? 'JCI Akredite Klinik' : 'Deneyimli ekip',
       `${k.puan}/5.0 hasta memnuniyeti`,
@@ -309,21 +351,18 @@ Kurallar:
 
 Kullanıcı metni: "${mesaj.slice(0, 500)}"`;
 
-  const result = await withTimeout(
-    geminiGuardedModel.generateContent(prompt),
-    'Çıkarım zaman aşımına uğradı, lütfen tekrar deneyin'
-  );
-
   try {
-    const parsed = JSON.parse(jsonTemizle(result.response.text())) as CikarimSonucu;
+    const ham = await withTimeout(
+      callGeminiWithFallback(prompt, SISTEM_TALIMATI),
+      'Çıkarım zaman aşımına uğradı, lütfen tekrar deneyin'
+    );
+    const parsed = JSON.parse(jsonTemizle(ham)) as CikarimSonucu;
     if (parsed.uzmanlik === 'kapsam_disi') {
       return { uzmanlik: 'kapsam_disi', maxButce: null, sehir: null, kapsamDisi: true };
     }
-    // LLM liste dışı değer döndürürse en yakın eşleşmeye düşür
     if (!UZMANLIKLAR.includes(parsed.uzmanlik as typeof UZMANLIKLAR[number])) {
       parsed.uzmanlik = 'estetik cerrahi';
     }
-    // Dışarıdan bütçe verilmişse LLM'in null döndürmesini engelle
     if (butce && !parsed.maxButce) parsed.maxButce = butce;
     return parsed;
   } catch {
@@ -361,21 +400,18 @@ Kurallar:
 - Her paketi tek cümleyle tanıt (fiyat + klinik adı + öne çıkan özellik)
 - Fiyat ve klinik adını JSON'dan birebir al, uydurma`;
 
-  const result = await withTimeout(
-    geminiGuardedModel.generateContent(prompt),
+  const ham = await withTimeout(
+    callGeminiWithFallback(prompt, SISTEM_TALIMATI),
     'Sentez zaman aşımına uğradı, lütfen tekrar deneyin'
   );
 
-  return result.response.text().trim();
+  return ham.trim();
 }
 
 // ─── Bağlantı Testi ───────────────────────────────────────────────────────────
 
 export async function testBaglanti(): Promise<string> {
-  const result = await geminiModel.generateContent(
-    'Merhaba, sağlık turizmi hakkında bir cümle yaz.'
-  );
-  return result.response.text();
+  return callGeminiWithFallback('Merhaba, sağlık turizmi hakkında bir cümle yaz.');
 }
 
 // tsx lib/gemini.ts ile doğrudan çalıştırıldığında bağlantıyı test et

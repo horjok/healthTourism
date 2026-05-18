@@ -89,8 +89,12 @@ export interface CikarimSonucu {
 }
 
 export interface PaketOnerisi {
+  paket_id: string;
+  baslik: string;
   klinik_isim: string;
+  sehir: string;
   tahmini_fiyat: string;
+  sure_gun: number;
   avantajlar: string[];
 }
 
