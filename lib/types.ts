@@ -54,6 +54,9 @@ export interface Rezervasyon {
   item_detay?: string | null;
   sepet_ozeti?: Record<string, unknown>[] | null;
   erisilebilirlik?: ErisilebilirlikBilgisi | null;
+  alici_ad?: string | null;
+  alici_email?: string | null;
+  alici_telefon?: string | null;
 }
 
 export interface KullaniciProfil {

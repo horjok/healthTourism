@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaketler, getPaketById } from '@/lib/supabase';
 
+// ISR: 60 sn'de bir Vercel edge cache invalidate edilir, DB yükü düşer
+export const revalidate = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

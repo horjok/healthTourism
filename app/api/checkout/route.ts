@@ -1,17 +1,19 @@
 import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth-guard';
 import { createServerSupabase } from '@/lib/supabase-clients';
-import { createRezervasyon } from '@/lib/supabase';
 import { generatePNR } from '@/lib/pnr';
 import { ok, err, fail } from '@/lib/api-response';
 import type { CartItem } from '@/lib/cartStore';
-import type { ErisilebilirlikBilgisi, RezervasyonItemTipi } from '@/lib/types';
+import type { ErisilebilirlikBilgisi, Rezervasyon } from '@/lib/types';
 
 interface CheckoutIstegi {
   items: CartItem[];
   tarih: string;
   islem_id: string;
   erisilebilirlik?: ErisilebilirlikBilgisi | null;
+  alici_ad?: string;
+  alici_email?: string;
+  alici_telefon?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -25,29 +27,24 @@ export async function POST(req: NextRequest) {
       return err('items, tarih ve islem_id zorunludur', 400);
     }
 
-    // grup_kodu aynı siparişteki rezervasyon satırlarını birbirine bağlar
     const grup_kodu = generatePNR();
     const sb = await createServerSupabase();
 
-    const rezervasyonlar = await Promise.all(
-      body.items.map((item) =>
-        createRezervasyon({
-          kullanici_id: guard.ctx.userId, // ← daima oturumdan
-          paket_id: item.type === 'package' ? item.id : null,
-          tarih: body.tarih,
-          durum: 'beklemede',
-          takip_kodu: generatePNR(),
-          item_tipi: item.type as RezervasyonItemTipi,
-          item_isim: item.name,
-          item_detay: item.detail ?? null,
-          item_fiyat: item.lineTotal,
-          grup_kodu,
-          erisilebilirlik: body.erisilebilirlik ?? null,
-        }, sb)
-      )
-    );
+    // Atomik checkout — tek RPC, tek transaction, herhangi bir hata → tam rollback
+    const { data: rezervasyonlar, error } = await sb.rpc('process_checkout_cart', {
+      p_kullanici_id: guard.ctx.userId,
+      p_grup_kodu: grup_kodu,
+      p_tarih: body.tarih,
+      p_items: body.items,
+      p_erisilebilirlik: body.erisilebilirlik ?? null,
+      p_alici_ad: body.alici_ad ?? null,
+      p_alici_email: body.alici_email ?? null,
+      p_alici_telefon: body.alici_telefon ?? null,
+    });
 
-    return ok({ rezervasyonlar, islem_id: body.islem_id }, 201);
+    if (error) throw new Error(error.message);
+
+    return ok({ rezervasyonlar: rezervasyonlar as Rezervasyon[], islem_id: body.islem_id }, 201);
   } catch (e) {
     return fail('Rezervasyonlar oluşturulamadı', e);
   }

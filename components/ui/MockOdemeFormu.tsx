@@ -10,6 +10,9 @@ interface MockOdemeFormuProps {
   tarih: string;
   items: CartItem[];
   erisilebilirlik?: ErisilebilirlikBilgisi | null;
+  alici_ad?: string;
+  alici_email?: string;
+  alici_telefon?: string;
   onSuccess: (islemId: string) => void;
   onError: () => void;
 }
@@ -51,7 +54,7 @@ async function konfetiFirlat() {
   }, 300);
 }
 
-export default function MockOdemeFormu({ tutar, tarih, items, erisilebilirlik, onSuccess, onError }: MockOdemeFormuProps) {
+export default function MockOdemeFormu({ tutar, tarih, items, erisilebilirlik, alici_ad, alici_email, alici_telefon, onSuccess, onError }: MockOdemeFormuProps) {
   const [kartAdi, setKartAdi]         = useState('');
   const [kartNo, setKartNo]           = useState('');
   const [sonKullanma, setSonKullanma] = useState('');
@@ -72,7 +75,12 @@ export default function MockOdemeFormu({ tutar, tarih, items, erisilebilirlik, o
       await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, tarih, islem_id: sonuc.islem_id, erisilebilirlik: erisilebilirlik ?? null }),
+        body: JSON.stringify({
+          items, tarih,
+          islem_id: sonuc.islem_id,
+          erisilebilirlik: erisilebilirlik ?? null,
+          alici_ad, alici_email, alici_telefon,
+        }),
       });
 
       // 3 — Konfeti + kısa animasyon süresi

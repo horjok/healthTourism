@@ -25,42 +25,48 @@ export function KullaniciProvider({ children }: { children: React.ReactNode }) {
   const [rol, setRol] = useState<KullaniciRolTipi>('user');
   const [yuklendi, setYuklendi] = useState(false);
 
+  // 1) Auth state — yalnızca senkron state güncellemesi.
+  //    ÖNEMLİ: onAuthStateChange callback'i içinde ASLA başka bir Supabase
+  //    çağrısı (DB select, getUser vs.) await edilmemeli; GoTrue kilidi
+  //    serbest kalmaz ve sonraki tüm istekler tıkanır (deadlock).
   useEffect(() => {
     const supabase = getSupabaseClient();
+    let iptalEdildi = false;
 
-    supabase.auth.getUser().then(async ({ data }) => {
-      setKullanici(data.user);
-      if (data.user) {
-        const { data: roleRow } = await supabase
-          .from('user_roles')
-          .select('rol')
-          .eq('kullanici_id', data.user.id)
-          .maybeSingle();
-        setRol((roleRow?.rol as KullaniciRolTipi) ?? 'user');
-      }
+    supabase.auth.getSession().then(({ data }) => {
+      if (iptalEdildi) return;
+      setKullanici(data.session?.user ?? null);
       setYuklendi(true);
-    }).catch(() => setYuklendi(true));
+    }).catch(() => { if (!iptalEdildi) setYuklendi(true); });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        setKullanici(session?.user ?? null);
-        if (session?.user) {
-          const { data: roleRow } = await supabase
-            .from('user_roles')
-            .select('rol')
-            .eq('kullanici_id', session.user.id)
-            .maybeSingle();
-          setRol((roleRow?.rol as KullaniciRolTipi) ?? 'user');
-        } else {
-          setRol('user');
-        }
-      } finally {
-        setYuklendi(true);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Sadece senkron set — DB sorgusu aşağıdaki effect'te.
+      setKullanici(session?.user ?? null);
+      setYuklendi(true);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      iptalEdildi = true;
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // 2) Rol fetch — kullanıcı değiştiğinde callback dışında, normal effect içinde.
+  useEffect(() => {
+    if (!kullanici) { setRol('user'); return; }
+    const supabase = getSupabaseClient();
+    let iptalEdildi = false;
+    supabase
+      .from('user_roles')
+      .select('rol')
+      .eq('kullanici_id', kullanici.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (iptalEdildi) return;
+        setRol((data?.rol as KullaniciRolTipi) ?? 'user');
+      });
+    return () => { iptalEdildi = true; };
+  }, [kullanici]);
 
   return (
     <KullaniciContext.Provider value={{

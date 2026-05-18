@@ -74,6 +74,9 @@ export default function ClinicRezervasyonlar() {
   const [guncelleniyor, setGuncelleniyor] = useState<string | null>(null);
   const [filtre, setFiltre] = useState<Durum | 'tumu'>('tumu');
   const [arsivGoster, setArsivGoster] = useState(false);
+  // Yeni gelen satırlar — 3sn boyunca highlight + toast
+  const [yeniIdler, setYeniIdler] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -101,6 +104,57 @@ export default function ClinicRezervasyonlar() {
       }
     })();
   }, [router]);
+
+  // ─── Realtime: bu kliniğe ait INSERT/UPDATE'leri dinle ──────────────────────
+  useEffect(() => {
+    if (!klinikId) return;
+    const supabase = getSupabaseClient();
+
+    async function tekRezervasyonGetir(id: string): Promise<Rezervasyon | null> {
+      // Realtime payload sadece tablo satırı verir; FK join'li tam objeyi API'den çek
+      try {
+        const res = await fetch(`/api/clinic/rezervasyonlar?klinik_id=${klinikId}`);
+        const json = await res.json();
+        if (!json.success) return null;
+        return (json.data as Rezervasyon[]).find((r) => r.id === id) ?? null;
+      } catch { return null; }
+    }
+
+    const kanal = supabase
+      .channel(`rezervasyonlar_klinik_${klinikId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'rezervasyonlar' },
+        async (payload) => {
+          const yeni = payload.new as Rezervasyon;
+          // paket_id üzerinden bu kliniğe ait mi doğrula (RLS dışı server-side filtre yerine)
+          const tam = await tekRezervasyonGetir(yeni.id);
+          if (!tam) return;
+          setRezervasyonlar((prev) =>
+            prev.some((r) => r.id === tam.id) ? prev : [tam, ...prev]
+          );
+          setYeniIdler((prev) => new Set(prev).add(tam.id));
+          setToast(`Yeni rezervasyon · ${tam.item_isim ?? tam.paket?.baslik ?? 'paket'}`);
+          window.setTimeout(() => {
+            setYeniIdler((prev) => { const n = new Set(prev); n.delete(tam.id); return n; });
+          }, 3000);
+          window.setTimeout(() => setToast(null), 4000);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rezervasyonlar' },
+        (payload) => {
+          const guncel = payload.new as Rezervasyon;
+          setRezervasyonlar((prev) =>
+            prev.map((r) => r.id === guncel.id ? { ...r, ...guncel } : r)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(kanal); };
+  }, [klinikId]);
 
   async function durumGuncelle(rezervasyonId: string, yeniDurum: Durum) {
     if (!klinikId) return;
@@ -150,6 +204,13 @@ export default function ClinicRezervasyonlar() {
 
   return (
     <div>
+      {/* Realtime toast — yeni rezervasyon bildirimi */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-50 bg-emerald-600 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          {toast}
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-2xl font-bold text-gray-900">
           Rezervasyonlar
@@ -204,8 +265,12 @@ export default function ClinicRezervasyonlar() {
               const gecisler = GECIS_KURALLARI[r.durum];
               const islemde  = guncelleniyor === r.id;
 
+              const yeniMi = yeniIdler.has(r.id);
               return (
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={r.id}
+                  className={`hover:bg-gray-50 transition-colors ${yeniMi ? 'bg-amber-50 animate-pulse ring-2 ring-amber-300 ring-inset' : ''}`}
+                >
                   {/* Müşteri */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

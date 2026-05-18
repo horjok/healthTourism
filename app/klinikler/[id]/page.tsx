@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { getKlinikById, getPaketler } from '@/lib/supabase';
 import type { Paket } from '@/lib/types';
 
+// ISR: klinik detay sayfası 60sn boyunca static cache'lenir, sub-100ms TTFB
+export const revalidate = 60;
+
 // ─── Yardımcı bileşenler ──────────────────────────────────────────────────────
 
 // Yıldız gösterimi — yarım yıldızı simüle etmek için doluluk yüzdesi

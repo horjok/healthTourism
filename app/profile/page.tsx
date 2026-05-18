@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 import type { Rezervasyon, Ticket } from '@/lib/types';
 import { getSupabaseClient } from '@/lib/supabase-client';
+import DownloadTicketButton, { type BiletItem } from '@/components/ui/DownloadTicketButton';
 
 const DURUM_STILLER: Record<string, { etiket: string; stil: string }> = {
   beklemede:  { etiket: 'Beklemede',  stil: 'bg-amber-100 text-amber-700'   },
@@ -412,6 +413,15 @@ export default function ProfilePage() {
                     const grupTarih  = satirlar[0]?.tarih;
                     const tumuIptal  = satirlar.every(r => r.durum === 'iptal');
                     const gercekGrup = !grupKodu.startsWith('solo-');
+                    const aktifSatirlar = satirlar.filter(r => r.durum !== 'iptal');
+                    const pnr = gercekGrup ? grupKodu : (satirlar[0].takip_kodu ?? satirlar[0].id.slice(0, 8).toUpperCase());
+                    const biletItems: BiletItem[] = aktifSatirlar.map(r => ({
+                      isim: r.item_isim ?? r.paket?.baslik ?? r.paket?.klinik?.isim ?? '—',
+                      detay: r.item_detay ?? r.paket?.klinik?.sehir ?? null,
+                      tip: r.item_tipi ?? 'package',
+                      fiyat: r.item_fiyat ?? r.paket?.toplam_fiyat ?? 0,
+                    }));
+                    const biletToplam = aktifSatirlar.reduce((s, r) => s + (r.item_fiyat ?? r.paket?.toplam_fiyat ?? 0), 0);
 
                     return (
                       <div key={grupKodu} className="bg-white border-2 border-[#0f3460]/10 rounded-2xl shadow-sm overflow-hidden">
@@ -576,6 +586,33 @@ export default function ProfilePage() {
                             );
                           })}
                         </div>
+
+                        {/* PDF Bilet — sadece aktif öğe varsa */}
+                        {biletItems.length > 0 && (() => {
+                          // Öncelik: rezervasyon kaydındaki alıcı bilgisi (satın alma anındaki form)
+                          // Fallback: oturum kullanıcısı (eski rezervasyonlar için)
+                          const ilk = satirlar[0];
+                          const biletAd    = ilk.alici_ad    ?? goruntulenenIsim;
+                          const biletEmail = ilk.alici_email ?? emailKisa;
+                          const biletTel   = ilk.alici_telefon ?? undefined;
+                          return (
+                            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                              <p className="text-xs text-gray-500">
+                                PNR/QR kodlu bilet — kliniğe girişte ibraz edin
+                              </p>
+                              <DownloadTicketButton
+                                kompakt
+                                grupKodu={pnr}
+                                items={biletItems}
+                                tarih={grupTarih ? new Date(grupTarih).toLocaleDateString('tr-TR') : undefined}
+                                yolcuAd={biletAd}
+                                yolcuEmail={biletEmail}
+                                yolcuTel={biletTel}
+                                toplam={biletToplam}
+                              />
+                            </div>
+                          );
+                        })()}
 
                         {tumuIptal && (
                           <div className="px-5 py-2 bg-red-50 border-t border-red-100 text-center">

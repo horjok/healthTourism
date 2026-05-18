@@ -9,9 +9,8 @@ const API_ANAHTARLARI = [
   process.env.GEMINI_API_KEY, // geriye dönük uyumluluk
 ].filter((k): k is string => Boolean(k));
 
+// Sadece stabil ve genel kullanıma açık model ID'leri — preview/geçersiz ID'ler 404 döndürür
 const MODELLER = [
-  'gemini-3.1-flash-lite',
-  'gemini-3-flash-preview',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
   'gemini-2.0-flash',
@@ -50,8 +49,9 @@ async function callGeminiWithFallback(
           }),
         ]).finally(() => clearTimeout(timer));
         return sonuc.response.text();
-      } catch {
-        console.warn(`Gemini: Anahtar ${ki + 1}, Model ${model} başarısız`);
+      } catch (e) {
+        const sebep = e instanceof Error ? e.message : String(e);
+        console.warn(`Gemini: Anahtar ${ki + 1}, Model ${model} başarısız — ${sebep}`);
       }
     }
   }

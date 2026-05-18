@@ -3,6 +3,7 @@
 import { createContext, useContext, useState } from 'react';
 import ChatEkrani from '@/components/chat/ChatEkrani';
 import DestekWidget from '@/components/ui/DestekWidget';
+import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 interface ChatContextValue {
   chatAcik: boolean;
@@ -26,12 +27,16 @@ export function useChatContext() {
 export default function ChatProvider({ children }: { children: React.ReactNode }) {
   const [chatAcik, setChatAcik] = useState(false);
   const [onAcilMesaj, setOnAcilMesaj] = useState('');
+  const { rol } = useKullaniciContext();
+
+  // Admin kullanıcısının destek talebi widget'ına ihtiyacı yok
+  const destekGoster = rol !== 'super_admin';
 
   return (
     <ChatContext.Provider value={{ chatAcik, setChatAcik, onAcilMesaj, setOnAcilMesaj }}>
       {children}
       <ChatEkrani isOpen={chatAcik} onClose={() => setChatAcik(false)} />
-      <DestekWidget chatAcik={chatAcik} />
+      {destekGoster && <DestekWidget chatAcik={chatAcik} />}
     </ChatContext.Provider>
   );
 }

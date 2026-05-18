@@ -1,8 +1,21 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import DownloadTicketButton, { type BiletItem } from '@/components/ui/DownloadTicketButton';
+import type { CartItem } from '@/lib/cartStore';
+import { getSupabaseClient } from '@/lib/supabase-client';
+
+interface SonSiparis {
+  islemId: string;
+  items: CartItem[];
+  tarih: string;
+  toplam: number;
+  adSoyad?: string;
+  email?: string;
+  telefon?: string;
+}
 
 // ─── Konfeti tanecikleri ───────────────────────────────────────────────────────
 
@@ -79,6 +92,49 @@ function Konfeti() {
 function BasariIcerigi() {
   const searchParams = useSearchParams();
   const islemId = searchParams.get('id') ?? '';
+  const grupKodu = searchParams.get('pnr') ?? islemId;
+
+  // Sepet checkout sonrası temizlendiği için snapshot'ı sessionStorage'dan oku
+  const [siparis, setSiparis] = useState<SonSiparis | null>(null);
+  // Yolcu kimliği — öncelik: satın alma formundaki bilgi, fallback: oturum kullanıcısı
+  const [yolcuAd, setYolcuAd] = useState<string>('Misafir');
+  const [yolcuEmail, setYolcuEmail] = useState<string>('');
+  const [yolcuTel, setYolcuTel] = useState<string>('');
+
+  useEffect(() => {
+    let formdanGeldi = false;
+    try {
+      const raw = sessionStorage.getItem('healthtour-last-order');
+      if (raw) {
+        const snap = JSON.parse(raw) as SonSiparis;
+        setSiparis(snap);
+        if (snap.adSoyad)  { setYolcuAd(snap.adSoyad);    formdanGeldi = true; }
+        if (snap.email)    { setYolcuEmail(snap.email);   formdanGeldi = true; }
+        if (snap.telefon)  { setYolcuTel(snap.telefon);   formdanGeldi = true; }
+      }
+    } catch { /* ignore */ }
+
+    // Form bilgisi eksikse oturumdan tamamla
+    if (!formdanGeldi) {
+      const supabase = getSupabaseClient();
+      supabase.auth.getUser().then(({ data }) => {
+        const u = data.user;
+        if (!u) return;
+        const ad = (u.user_metadata?.display_name as string | undefined) || (u.email?.split('@')[0] ?? 'Misafir');
+        setYolcuAd(ad);
+        setYolcuEmail(u.email ?? '');
+      });
+    }
+  }, []);
+
+  const biletItems: BiletItem[] = (siparis?.items ?? []).map((i) => ({
+    isim: i.name,
+    detay: i.detail,
+    tip: i.type,
+    fiyat: i.lineTotal,
+  }));
+  const toplam = siparis?.toplam ?? 0;
+  const tarih = siparis?.tarih;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-16 text-center">
@@ -114,6 +170,21 @@ function BasariIcerigi() {
           <p className="text-base font-mono font-bold text-[#0f3460] break-all">
             {islemId}
           </p>
+        </div>
+      )}
+
+      {/* PDF indirme */}
+      {biletItems.length > 0 && (
+        <div className="mb-4 relative z-10">
+          <DownloadTicketButton
+            grupKodu={grupKodu}
+            items={biletItems}
+            tarih={tarih ?? new Date().toLocaleDateString('tr-TR')}
+            yolcuAd={yolcuAd}
+            yolcuEmail={yolcuEmail}
+            yolcuTel={yolcuTel}
+            toplam={toplam}
+          />
         </div>
       )}
 

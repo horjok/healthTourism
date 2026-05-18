@@ -7,7 +7,6 @@ import type { AdminStats } from '@/lib/types';
 const STAT_KARTI = [
   { key: 'toplam_kullanici'  as keyof AdminStats, label: 'Toplam Kullanıcı',   icon: '👥', renk: 'bg-blue-50  text-blue-700'  },
   { key: 'toplam_rezervasyon' as keyof AdminStats, label: 'Toplam Rezervasyon', icon: '📅', renk: 'bg-green-50 text-green-700' },
-  { key: 'bekleyen_basvuru'  as keyof AdminStats, label: 'Bekleyen Başvuru',   icon: '🏥', renk: 'bg-amber-50 text-amber-700' },
   { key: 'acik_bilet'        as keyof AdminStats, label: 'Açık Bilet',         icon: '🎫', renk: 'bg-red-50   text-red-700'   },
 ];
 
@@ -28,7 +27,6 @@ export default function AdminDashboard() {
     const supabase = getSupabaseClient();
     const ch = supabase
       .channel('admin-dashboard-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clinic_applications' }, yukleStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' },             yukleStats)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rezervasyonlar' },      yukleStats)
       .subscribe((durum) => setCanli(durum === 'SUBSCRIBED'));
@@ -62,7 +60,7 @@ export default function AdminDashboard() {
 
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-blue-700">
         <strong>Gerçek zamanlı izleme aktif.</strong>{' '}
-        Yeni başvuru, bilet veya rezervasyon geldiğinde sayaçlar otomatik güncellenir.
+        Yeni bilet veya rezervasyon geldiğinde sayaçlar otomatik güncellenir.
       </div>
     </div>
   );

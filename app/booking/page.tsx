@@ -484,7 +484,19 @@ function BookingInner() {
             tarih={tarih}
             items={items}
             erisilebilirlik={assistanceData.gerekli ? assistanceData : null}
+            alici_ad={adSoyad.trim()}
+            alici_email={email.trim()}
+            alici_telefon={telefon.trim()}
             onSuccess={(islemId) => {
+              // Success sayfası PDF için sepet snapshot'ına ihtiyaç duyar — clearCart ÖNCESİ sakla
+              try {
+                sessionStorage.setItem('healthtour-last-order', JSON.stringify({
+                  islemId, items, tarih, toplam: grand,
+                  adSoyad: adSoyad.trim(),
+                  email: email.trim(),
+                  telefon: telefon.trim(),
+                }));
+              } catch { /* sessionStorage erişilemeyebilir */ }
               clearCart();
               router.push(`/booking/success?id=${encodeURIComponent(islemId)}`);
             }}
