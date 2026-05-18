@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
           takip_kodu: generatePNR(),
           item_tipi: item.type as RezervasyonItemTipi,
           item_isim: item.name,
+          item_detay: item.detail ?? null,
           item_fiyat: item.lineTotal,
           grup_kodu,
           erisilebilirlik: body.erisilebilirlik ?? null,

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
-import flights from '@/data/flights.json';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
 
 type Flight = {
@@ -24,7 +23,6 @@ type Flight = {
 const DESTINATIONS = ['İstanbul', 'Antalya', 'İzmir'];
 const AIRLINES = ['Tümü', 'Turkish Airlines', 'EasyJet', 'British Airways', 'Emirates', 'KLM', 'Lufthansa', 'Air France', 'Pegasus'];
 const CABIN_CLASSES = ['Tümü', 'Economy', 'Business', 'First'];
-const ORIGINS = Array.from(new Set((flights as Flight[]).map(f => f.from))).sort();
 
 export default function FlightsPage() {
   const { dil } = useDilContext();
@@ -34,6 +32,8 @@ export default function FlightsPage() {
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
 
+  const [flightList, setFlightList] = useState<Flight[]>([]);
+  const [yukleniyor, setYukleniyor] = useState(true);
   const [destination, setDestination] = useState('');
   const [origin, setOrigin] = useState('');
   const [airline, setAirline] = useState('Tümü');
@@ -41,19 +41,29 @@ export default function FlightsPage() {
   const [directOnly, setDirectOnly] = useState(false);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [sort, setSort] = useState<'price' | 'duration'>('price');
+
+  useEffect(() => {
+    fetch('/api/ucuslar')
+      .then(r => r.json())
+      .then(json => { if (json.success) setFlightList(json.data as Flight[]); })
+      .finally(() => setYukleniyor(false));
+  }, []);
+
+  const ORIGINS = useMemo(() => Array.from(new Set(flightList.map(f => f.from))).sort(), [flightList]);
+
   function addFlight(f: Flight) {
     addItem({
       id: `flight-${f.id}`,
       type: 'flight',
       name: `${f.airline} — ${f.from_code} → ${f.to_code}`,
-      detail: `${f.from} → ${f.to} · ${f.duration} · ${f.direct ? (tr ? 'Direkt' : 'Direct') : (tr ? 'Aktarmalı' : 'Connecting')}`,
+      detail: `${f.from} → ${f.to} · ${f.duration} · ${f.direct ? (tr ? 'Direkt' : 'Direct') : (tr ? 'Aktarmalı' : 'Connecting')} · ${f.class}`,
       unitPrice: f.price,
       quantity: 1,
     });
   }
 
   const filtered = useMemo(() => {
-    let list = flights as Flight[];
+    let list = flightList;
     if (destination) list = list.filter(f => f.to === destination);
     if (origin) list = list.filter(f => f.from === origin);
     if (airline !== 'Tümü') list = list.filter(f => f.airline === airline);
@@ -62,7 +72,7 @@ export default function FlightsPage() {
     list = list.filter(f => f.price <= maxPrice);
     if (sort === 'price') list = [...list].sort((a, b) => a.price - b.price);
     return list;
-  }, [destination, origin, airline, cabinClass, directOnly, maxPrice, sort]);
+  }, [flightList, destination, origin, airline, cabinClass, directOnly, maxPrice, sort]);
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -211,12 +221,20 @@ export default function FlightsPage() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-gray-500">
-                <span className="font-bold text-gray-900">{filtered.length}</span>{' '}
-                {tr ? 'uçuş bulundu' : 'flights found'}
+                {yukleniyor
+                  ? (tr ? 'Uçuşlar yükleniyor...' : 'Loading flights...')
+                  : <><span className="font-bold text-gray-900">{filtered.length}</span>{' '}{tr ? 'uçuş bulundu' : 'flights found'}</>
+                }
               </p>
             </div>
 
-            {filtered.length === 0 && (
+            {yukleniyor && (
+              <div className="flex justify-center py-20">
+                <div className="w-10 h-10 border-4 border-[#0f3460] border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!yukleniyor && filtered.length === 0 && (
               <div className="text-center py-20 bg-white rounded-3xl border border-gray-100">
                 <div className="text-5xl mb-4">✈️</div>
                 <p className="text-gray-500 font-medium">{tr ? 'Uçuş bulunamadı' : 'No flights found'}</p>

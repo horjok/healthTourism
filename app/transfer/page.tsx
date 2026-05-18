@@ -1,11 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
+
+type TransferDB = {
+  id: string;
+  baslik_tr: string;
+  baslik_en: string;
+  aciklama_tr: string;
+  aciklama_en: string;
+  fiyat: number;
+  birim_tr: string;
+  birim_en: string;
+  ozellikler_tr: string[];
+  ozellikler_en: string[];
+  oneri: boolean;
+};
+
+const STIL: Record<string, { ikon: string; renk: string; aktifRenk: string }> = {
+  normal: { ikon: '🚐', renk: 'border-gray-200', aktifRenk: 'border-[#0f3460] bg-blue-50' },
+  vip:    { ikon: '🚗', renk: 'border-gray-200', aktifRenk: 'border-[#0f3460] bg-blue-50' },
+};
 
 export default function TransferPage() {
   const { dil } = useDilContext();
@@ -14,54 +33,28 @@ export default function TransferPage() {
   const { addItem } = useCartStore();
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
-  const [selected, setSelected] = useState<'normal' | 'vip' | null>(null);
+
+  const [transfers, setTransfers] = useState<TransferDB[]>([]);
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
 
-  const TRANSFERS = [
-    {
-      id: 'normal',
-      ikon: '🚐',
-      baslik: tr ? 'Standart Transfer' : 'Standard Transfer',
-      aciklama: tr ? 'Konforlu minibüs veya sedan araç' : 'Comfortable minibus or sedan vehicle',
-      fiyat: 30,
-      birim: tr ? 'kişi başı' : 'per person',
-      ozellikler: [
-        tr ? '✓ Havalimanı karşılama' : '✓ Airport pickup',
-        tr ? '✓ Otel transferi' : '✓ Hotel transfer',
-        tr ? '✓ Klinik transferi' : '✓ Clinic transfer',
-      ],
-      renk: 'border-gray-200',
-      aktifRenk: 'border-[#0f3460] bg-blue-50',
-      oneri: false,
-    },
-    {
-      id: 'vip',
-      ikon: '🚗',
-      baslik: tr ? 'VIP Transfer' : 'VIP Transfer',
-      aciklama: tr ? 'Lüks Mercedes, özel şoför' : 'Luxury Mercedes, private driver',
-      fiyat: 80,
-      birim: tr ? 'araç başı' : 'per vehicle',
-      ozellikler: [
-        tr ? '✓ Özel karşılama tabelası' : '✓ Private welcome sign',
-        tr ? '✓ İkram servisi' : '✓ Refreshment service',
-        tr ? '✓ 7/24 şoför' : '✓ 24/7 driver',
-        tr ? '✓ Havalimanı fast-track' : '✓ Airport fast-track',
-        tr ? '✓ Çocuk koltuğu (isteğe bağlı)' : '✓ Child seat (optional)',
-      ],
-      renk: 'border-gray-200',
-      aktifRenk: 'border-[#0f3460] bg-blue-50',
-      oneri: true,
-    },
-  ];
+  useEffect(() => {
+    fetch('/api/transferler')
+      .then(r => r.json())
+      .then(json => { if (json.success) setTransfers(json.data as TransferDB[]); })
+      .finally(() => setYukleniyor(false));
+  }, []);
 
   function handleAdd() {
     if (!selected) return;
-    const t = TRANSFERS.find(t => t.id === selected)!;
+    const t = transfers.find(t => t.id === selected);
+    if (!t) return;
     addItem({
       id: `transfer-${selected}`,
       type: 'transfer',
-      name: t.baslik,
-      detail: t.aciklama,
+      name: tr ? t.baslik_tr : t.baslik_en,
+      detail: tr ? t.aciklama_tr : t.aciklama_en,
       unitPrice: t.fiyat,
       quantity: 1,
     });
@@ -107,69 +100,84 @@ export default function TransferPage() {
           </div>
         </div>
 
+        {/* Yükleniyor */}
+        {yukleniyor && (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-[#0f3460] border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
         {/* Transfer kartları */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {TRANSFERS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setSelected(t.id as 'normal' | 'vip')}
-              className={`relative text-left rounded-3xl border-2 p-7 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
-                selected === t.id ? t.aktifRenk : t.renk + ' bg-white hover:border-gray-300'
-              }`}>
+        {!yukleniyor && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {transfers.map(t => {
+                const stil = STIL[t.id] ?? { ikon: '🚌', renk: 'border-gray-200', aktifRenk: 'border-[#0f3460] bg-blue-50' };
+                const ozellikler = tr ? t.ozellikler_tr : t.ozellikler_en;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelected(t.id)}
+                    className={`relative text-left rounded-3xl border-2 p-7 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
+                      selected === t.id ? stil.aktifRenk : stil.renk + ' bg-white hover:border-gray-300'
+                    }`}>
 
-              {t.oneri && (
-                <div className="absolute top-4 right-4 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  {tr ? 'ÖNERİLEN' : 'RECOMMENDED'}
-                </div>
+                    {t.oneri && (
+                      <div className="absolute top-4 right-4 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-full">
+                        {tr ? 'ÖNERİLEN' : 'RECOMMENDED'}
+                      </div>
+                    )}
+
+                    {selected === t.id && (
+                      <div className="absolute top-4 left-4 w-6 h-6 bg-[#0f3460] rounded-full flex items-center justify-center text-white text-xs">✓</div>
+                    )}
+
+                    <div className="text-5xl mb-4">{stil.ikon}</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">{tr ? t.baslik_tr : t.baslik_en}</h3>
+                    <p className="text-sm text-gray-500 mb-5">{tr ? t.aciklama_tr : t.aciklama_en}</p>
+
+                    <ul className="space-y-2 mb-6">
+                      {ozellikler.map((o, i) => (
+                        <li key={i} className="text-sm text-gray-600">{o}</li>
+                      ))}
+                    </ul>
+
+                    <div className="pt-4 border-t border-gray-100">
+                      <span className="text-3xl font-extrabold text-[#0f3460]">{formatla(t.fiyat)}</span>
+                      <span className="text-sm text-gray-400 ml-2">/ {tr ? t.birim_tr : t.birim_en}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sepete ekle butonu */}
+            <div className="text-center">
+              {!isKlinikYoneticisi && (
+                <button
+                  onClick={handleAdd}
+                  disabled={!selected || added}
+                  className={`px-12 py-4 font-bold rounded-2xl text-lg transition-all shadow-lg ${
+                    added
+                      ? 'bg-green-500 text-white'
+                      : selected
+                      ? 'bg-[#0f3460] text-white hover:bg-[#0a1628] hover:scale-105 hover:shadow-xl'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}>
+                  {added
+                    ? '✓ ' + (tr ? 'Sepete Eklendi!' : 'Added to Cart!')
+                    : tr ? 'Sepete Ekle →' : 'Add to Cart →'}
+                </button>
               )}
 
-              {selected === t.id && (
-                <div className="absolute top-4 left-4 w-6 h-6 bg-[#0f3460] rounded-full flex items-center justify-center text-white text-xs">✓</div>
+              {!selected && (
+                <p className="text-sm text-gray-400 mt-3">
+                  {tr ? 'Lütfen bir transfer seçeneği seçin' : 'Please select a transfer option'}
+                </p>
               )}
-
-              <div className="text-5xl mb-4">{t.ikon}</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{t.baslik}</h3>
-              <p className="text-sm text-gray-500 mb-5">{t.aciklama}</p>
-
-              <ul className="space-y-2 mb-6">
-                {t.ozellikler.map((o, i) => (
-                  <li key={i} className="text-sm text-gray-600">{o}</li>
-                ))}
-              </ul>
-
-              <div className="pt-4 border-t border-gray-100">
-                <span className="text-3xl font-extrabold text-[#0f3460]">{formatla(t.fiyat)}</span>
-                <span className="text-sm text-gray-400 ml-2">/ {t.birim}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Sepete ekle butonu */}
-        <div className="text-center">
-          {!isKlinikYoneticisi && (
-          <button
-            onClick={handleAdd}
-            disabled={!selected || added}
-            className={`px-12 py-4 font-bold rounded-2xl text-lg transition-all shadow-lg ${
-              added
-                ? 'bg-green-500 text-white'
-                : selected
-                ? 'bg-[#0f3460] text-white hover:bg-[#0a1628] hover:scale-105 hover:shadow-xl'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}>
-            {added
-              ? '✓ ' + (tr ? 'Sepete Eklendi!' : 'Added to Cart!')
-              : tr ? 'Sepete Ekle →' : 'Add to Cart →'}
-          </button>
-          )}
-
-          {!selected && (
-            <p className="text-sm text-gray-400 mt-3">
-              {tr ? 'Lütfen bir transfer seçeneği seçin' : 'Please select a transfer option'}
-            </p>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </main>
   );

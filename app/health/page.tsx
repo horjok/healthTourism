@@ -33,27 +33,6 @@ type Clinic = {
   doctors: { name: string; title_tr: string; title_en: string; experience: number; languages: string[] }[];
 };
 
-const OPERATIONS: Operation[] = [
-  // SAÇ EKİMİ
-  { id: 'fue',    category: 'sac', name_tr: 'FUE Saç Ekimi',      name_en: 'FUE Hair Transplant',  desc_tr: 'Follükül ünitesi ekstraksiyonu, en yaygın yöntem',     desc_en: 'Follicular unit extraction, most common method',     duration_tr: '6-8 saat',    duration_en: '6-8 hours',   price_from: 1200 },
-  { id: 'dhi',    category: 'sac', name_tr: 'DHI Saç Ekimi',      name_en: 'DHI Hair Transplant',  desc_tr: 'Kalem tekniği, daha hızlı iyileşme',                   desc_en: 'Pen technique, faster recovery',                    duration_tr: '6-8 saat',    duration_en: '6-8 hours',   price_from: 1400 },
-  { id: 'safir',  category: 'sac', name_tr: 'Safir FUE',          name_en: 'Sapphire FUE',         desc_tr: 'Safir bıçakla minimal iz, premium sonuç',             desc_en: 'Sapphire blade, minimal scarring, premium result',  duration_tr: '7-9 saat',    duration_en: '7-9 hours',   price_from: 1600 },
-  { id: 'mezot',  category: 'sac', name_tr: 'Saç Mezoterapisi',   name_en: 'Hair Mesotherapy',     desc_tr: 'İğnesiz beslenme tedavisi',                            desc_en: 'Non-invasive nutrition treatment',                  duration_tr: '1 saat',      duration_en: '1 hour',      price_from: 300  },
-  // DİŞ
-  { id: 'implant',  category: 'dis', name_tr: 'Dental İmplant',    name_en: 'Dental Implant',    desc_tr: 'Kayıp diş için kalıcı çözüm',          desc_en: 'Permanent solution for missing teeth',   duration_tr: '1-2 saat',  duration_en: '1-2 hours',  price_from: 800  },
-  { id: 'hollywood',category: 'dis', name_tr: 'Hollywood Smile',   name_en: 'Hollywood Smile',   desc_tr: 'Porselen kaplamalar ile kusursuz gülüş', desc_en: 'Perfect smile with porcelain veneers',   duration_tr: '2-3 gün',   duration_en: '2-3 days',   price_from: 1200 },
-  { id: 'zirkonyum',category: 'dis', name_tr: 'Zirkonyum Kaplama', name_en: 'Zirconia Crown',    desc_tr: 'Metal içermeyen, doğal görünüm',         desc_en: 'Metal-free, natural appearance',          duration_tr: '2-3 gün',   duration_en: '2-3 days',   price_from: 900  },
-  { id: 'kanal',    category: 'dis', name_tr: 'Kanal Tedavisi',    name_en: 'Root Canal',        desc_tr: 'Enfekte diş kurtarma tedavisi',          desc_en: 'Infected tooth rescue treatment',         duration_tr: '1-2 saat',  duration_en: '1-2 hours',  price_from: 400  },
-  // ESTETİK
-  { id: 'rinoplasti', category: 'estetik', name_tr: 'Rinoplasti',    name_en: 'Rhinoplasty',     desc_tr: 'Burun estetiği ve düzeltme',               desc_en: 'Nose aesthetics and correction',       duration_tr: '2-3 saat', duration_en: '2-3 hours', price_from: 2500 },
-  { id: 'lipo',       category: 'estetik', name_tr: 'Liposuction',   name_en: 'Liposuction',     desc_tr: 'Yağ alma ve vücut şekillendirme',          desc_en: 'Fat removal and body contouring',      duration_tr: '2-4 saat', duration_en: '2-4 hours', price_from: 2000 },
-  { id: 'meme',       category: 'estetik', name_tr: 'Meme Estetiği', name_en: 'Breast Aesthetics',desc_tr: 'Büyütme, küçültme, dikleştirme',           desc_en: 'Augmentation, reduction, lift',        duration_tr: '2-3 saat', duration_en: '2-3 hours', price_from: 3000 },
-  { id: 'bbl',        category: 'estetik', name_tr: 'BBL',           name_en: 'BBL',             desc_tr: 'Brezilya tipi kalça estetiği',              desc_en: 'Brazilian butt lift',                  duration_tr: '3-4 saat', duration_en: '3-4 hours', price_from: 3500 },
-  // GÖZ
-  { id: 'lasik',    category: 'goz', name_tr: 'LASIK',              name_en: 'LASIK',           desc_tr: 'Lazer ile miyopi, astigmat düzeltme', desc_en: 'Laser correction of myopia, astigmatism', duration_tr: '30 dakika', duration_en: '30 minutes', price_from: 1400 },
-  { id: 'lasek',    category: 'goz', name_tr: 'LASEK',              name_en: 'LASEK',           desc_tr: 'Kornea zayıflığı olanlar için',        desc_en: 'For those with weak cornea',              duration_tr: '30 dakika', duration_en: '30 minutes', price_from: 1200 },
-  { id: 'katarakt', category: 'goz', name_tr: 'Katarakt Ameliyatı', name_en: 'Cataract Surgery',desc_tr: 'Bulanık görme çözümü',                 desc_en: 'Solution for blurry vision',              duration_tr: '1 saat',    duration_en: '1 hour',    price_from: 1800 },
-];
 
 const CATEGORIES = [
   { id: 'sac',     icon: '💆', tr: 'Saç Ekimi',       en: 'Hair Transplant'    },
@@ -77,23 +56,25 @@ export default function HealthPage() {
   const [added, setAdded]                 = useState(false);
   const [starFilter, setStarFilter]       = useState(0);
 
-  // Supabase'den çekilen klinikler
+  // Supabase'den çekilen klinikler ve operasyonlar
   const [tumKlinikler, setTumKlinikler]   = useState<Clinic[]>([]);
+  const [operasyonlar, setOperasyonlar]   = useState<Operation[]>([]);
   const [klinikYukleniyor, setKlinikYukleniyor] = useState(true);
   const [klinikHata, setKlinikHata]       = useState(false);
 
   useEffect(() => {
-    fetch('/api/health/klinikler')
-      .then(r => r.json())
-      .then(json => {
-        if (json.success) setTumKlinikler(json.data as Clinic[]);
-        else setKlinikHata(true);
-      })
-      .catch(() => setKlinikHata(true))
+    Promise.all([
+      fetch('/api/health/klinikler').then(r => r.json()),
+      fetch('/api/saglik-operasyonlari').then(r => r.json()),
+    ]).then(([klinikJson, opJson]) => {
+      if (klinikJson.success) setTumKlinikler(klinikJson.data as Clinic[]);
+      else setKlinikHata(true);
+      if (opJson.success) setOperasyonlar(opJson.data as Operation[]);
+    }).catch(() => setKlinikHata(true))
       .finally(() => setKlinikYukleniyor(false));
   }, []);
 
-  const ops = OPERATIONS.filter(o => o.category === category);
+  const ops = operasyonlar.filter(o => o.category === category);
   const clinics = tumKlinikler.filter(c =>
     c.specialties.includes(category) &&
     (starFilter === 0 || c.stars === starFilter)

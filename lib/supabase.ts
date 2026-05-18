@@ -108,6 +108,7 @@ type YeniRezervasyon = {
   sepet_ozeti?: Record<string, unknown>[] | null;
   item_tipi?: RezervasyonItemTipi;
   item_isim?: string | null;
+  item_detay?: string | null;
   item_fiyat?: number | null;
   grup_kodu?: string | null;
   erisilebilirlik?: ErisilebilirlikBilgisi | null;
@@ -127,6 +128,7 @@ export async function createRezervasyon(
   if (rezervasyon.takip_kodu)    payload.takip_kodu    = rezervasyon.takip_kodu;
   if (rezervasyon.item_tipi)     payload.item_tipi     = rezervasyon.item_tipi;
   if (rezervasyon.item_isim)     payload.item_isim     = rezervasyon.item_isim;
+  if (rezervasyon.item_detay)    payload.item_detay    = rezervasyon.item_detay;
   if (rezervasyon.item_fiyat)    payload.item_fiyat    = rezervasyon.item_fiyat;
   if (rezervasyon.grup_kodu)     payload.grup_kodu     = rezervasyon.grup_kodu;
   if (rezervasyon.erisilebilirlik !== undefined) payload.erisilebilirlik = rezervasyon.erisilebilirlik;

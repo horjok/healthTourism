@@ -51,6 +51,7 @@ export interface Rezervasyon {
   durum: 'beklemede' | 'onaylandi' | 'tamamlandi' | 'iptal' | 'arsivlendi';
   olusturma_tarihi: string;
   takip_kodu?: string;
+  item_detay?: string | null;
   sepet_ozeti?: Record<string, unknown>[] | null;
   erisilebilirlik?: ErisilebilirlikBilgisi | null;
 }

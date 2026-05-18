@@ -450,6 +450,9 @@ export default function ProfilePage() {
                                       <p className="text-sm font-bold text-gray-800 truncate mt-1">
                                         {rez.item_isim ?? rez.paket?.baslik ?? rez.paket?.klinik?.isim ?? '—'}
                                       </p>
+                                      {rez.item_detay && (
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{rez.item_detay}</p>
+                                      )}
                                     </div>
                                   </div>
                                   <DurumBadge durum={rez.durum} />
