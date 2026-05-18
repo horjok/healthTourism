@@ -48,7 +48,7 @@ export interface Rezervasyon {
   item_fiyat?: number | null;
   grup_kodu?: string | null;
   tarih: string;
-  durum: 'beklemede' | 'onaylandi' | 'tamamlandi' | 'iptal';
+  durum: 'beklemede' | 'onaylandi' | 'tamamlandi' | 'iptal' | 'arsivlendi';
   olusturma_tarihi: string;
   takip_kodu?: string;
   sepet_ozeti?: Record<string, unknown>[] | null;

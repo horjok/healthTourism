@@ -8,17 +8,19 @@ import type { ErisilebilirlikBilgisi, Rezervasyon } from '@/lib/types';
 type Durum = Rezervasyon['durum'];
 
 const DURUM_RENK: Record<Durum, string> = {
-  beklemede:  'bg-amber-100 text-amber-700',
-  onaylandi:  'bg-blue-100  text-blue-700',
-  tamamlandi: 'bg-emerald-100 text-emerald-700',
-  iptal:      'bg-red-100   text-red-700',
+  beklemede:   'bg-amber-100 text-amber-700',
+  onaylandi:   'bg-blue-100  text-blue-700',
+  tamamlandi:  'bg-emerald-100 text-emerald-700',
+  iptal:       'bg-red-100   text-red-700',
+  arsivlendi:  'bg-gray-100  text-gray-500',
 };
 
 const DURUM_LABEL: Record<Durum, string> = {
-  beklemede:  'Beklemede',
-  onaylandi:  'Onaylandı',
-  tamamlandi: 'Tamamlandı',
-  iptal:      'İptal',
+  beklemede:   'Beklemede',
+  onaylandi:   'Onaylandı',
+  tamamlandi:  'Tamamlandı',
+  iptal:       'İptal',
+  arsivlendi:  'Arşivlendi',
 };
 
 const GECIS_KURALLARI: Record<Durum, Durum[]> = {
@@ -26,6 +28,7 @@ const GECIS_KURALLARI: Record<Durum, Durum[]> = {
   onaylandi:  ['tamamlandi', 'iptal'],
   tamamlandi: [],
   iptal:      [],
+  arsivlendi: [],
 };
 
 // Tooltip: erisilebilirlik detayı için basit hover kutusu
@@ -70,6 +73,7 @@ export default function ClinicRezervasyonlar() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [guncelleniyor, setGuncelleniyor] = useState<string | null>(null);
   const [filtre, setFiltre] = useState<Durum | 'tumu'>('tumu');
+  const [arsivGoster, setArsivGoster] = useState(false);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -117,9 +121,13 @@ export default function ClinicRezervasyonlar() {
     setGuncelleniyor(null);
   }
 
-  const gorunen = filtre === 'tumu'
+  const aktifRezervasyonlar = arsivGoster
     ? rezervasyonlar
-    : rezervasyonlar.filter((r) => r.durum === filtre);
+    : rezervasyonlar.filter((r) => r.durum !== 'arsivlendi');
+
+  const gorunen = filtre === 'tumu'
+    ? aktifRezervasyonlar
+    : aktifRezervasyonlar.filter((r) => r.durum === filtre);
 
   if (yukleniyor) return <p className="text-gray-500 text-sm">Yükleniyor...</p>;
 
@@ -131,18 +139,33 @@ export default function ClinicRezervasyonlar() {
     );
   }
 
+  const gorulecekler = arsivGoster ? rezervasyonlar : rezervasyonlar.filter((r) => r.durum !== 'arsivlendi');
+  const arsivSayisi = rezervasyonlar.filter((r) => r.durum === 'arsivlendi').length;
+
   const sayimlar = (['tumu', 'beklemede', 'onaylandi', 'tamamlandi', 'iptal'] as const).map((d) => ({
     key: d,
     label: d === 'tumu' ? 'Tümü' : DURUM_LABEL[d],
-    sayi: d === 'tumu' ? rezervasyonlar.length : rezervasyonlar.filter((r) => r.durum === d).length,
+    sayi: d === 'tumu' ? gorulecekler.length : gorulecekler.filter((r) => r.durum === d).length,
   }));
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-5">
-        Rezervasyonlar
-        <span className="ml-2 text-base font-normal text-gray-400">({rezervasyonlar.length})</span>
-      </h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Rezervasyonlar
+          <span className="ml-2 text-base font-normal text-gray-400">({gorulecekler.length})</span>
+        </h1>
+        <button
+          onClick={() => { setArsivGoster((p) => !p); setFiltre('tumu'); }}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${
+            arsivGoster
+              ? 'bg-gray-200 text-gray-700 border-gray-300'
+              : 'text-gray-500 border-gray-200 hover:border-gray-400'
+          }`}
+        >
+          {arsivGoster ? 'Arşivi Gizle' : `Arşiv (${arsivSayisi})`}
+        </button>
+      </div>
 
       {/* Durum filtre çubuğu */}
       <div className="flex flex-wrap gap-2 mb-5">
@@ -235,24 +258,36 @@ export default function ClinicRezervasyonlar() {
 
                   {/* İşlem */}
                   <td className="px-4 py-3">
-                    {gecisler.length > 0 ? (
-                      <select
-                        disabled={islemde}
-                        defaultValue=""
-                        onChange={(e) => {
-                          if (e.target.value) durumGuncelle(r.id, e.target.value as Durum);
-                          e.target.value = '';
-                        }}
-                        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 disabled:opacity-50 cursor-pointer"
-                      >
-                        <option value="" disabled>{islemde ? 'Güncelleniyor...' : 'Durum Değiştir'}</option>
-                        {gecisler.map((d) => (
-                          <option key={d} value={d}>{DURUM_LABEL[d]}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-xs text-gray-300">—</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {gecisler.length > 0 && (
+                        <select
+                          disabled={islemde}
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) durumGuncelle(r.id, e.target.value as Durum);
+                            e.target.value = '';
+                          }}
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#0f3460]/30 disabled:opacity-50 cursor-pointer"
+                        >
+                          <option value="" disabled>{islemde ? 'Güncelleniyor...' : 'Durum Değiştir'}</option>
+                          {gecisler.map((d) => (
+                            <option key={d} value={d}>{DURUM_LABEL[d]}</option>
+                          ))}
+                        </select>
+                      )}
+                      {r.durum !== 'arsivlendi' ? (
+                        <button
+                          disabled={islemde}
+                          onClick={() => durumGuncelle(r.id, 'arsivlendi')}
+                          title="Arşivle"
+                          className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 hover:border-gray-400 rounded-lg px-2 py-1.5 transition-colors disabled:opacity-40"
+                        >
+                          Arşivle
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-300 italic">Arşivde</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

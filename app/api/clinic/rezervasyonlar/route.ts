@@ -5,7 +5,7 @@ import { getRezervasyonlarByKlinik, updateRezervasyonDurum } from '@/lib/supabas
 import { ok, err, fail } from '@/lib/api-response';
 import type { Rezervasyon } from '@/lib/types';
 
-const izinliDurumlar: Rezervasyon['durum'][] = ['beklemede', 'onaylandi', 'tamamlandi', 'iptal'];
+const izinliDurumlar: Rezervasyon['durum'][] = ['beklemede', 'onaylandi', 'tamamlandi', 'iptal', 'arsivlendi'];
 
 export async function GET() {
   const guard = await requireRole(['clinic_manager']);
