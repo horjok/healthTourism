@@ -218,8 +218,11 @@ export default function HomePage() {
 
             {/* Tedavi chip'leri */}
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[13px] font-medium text-white/65">
-              {['Saç ekimi', 'Diş', 'Estetik', 'Göz tedavisi', 'Ortopedi'].map((chip) => (
-                <span key={chip} className={`rounded-full px-3 py-1 ring-1 ${chip === 'Estetik' ? 'bg-amber-500/15 text-amber-200 ring-amber-400/30' : 'bg-white/5 ring-white/10'}`}>
+              {(tr
+                ? ['Saç Ekimi', 'Diş', 'Estetik', 'Göz Tedavisi', 'Ortopedi']
+                : ['Hair Transplant', 'Dental', 'Aesthetic', 'Eye Treatment', 'Orthopedics']
+              ).map((chip, i) => (
+                <span key={chip} className={`rounded-full px-3 py-1 ring-1 ${i === 2 ? 'bg-amber-500/15 text-amber-200 ring-amber-400/30' : 'bg-white/5 ring-white/10'}`}>
                   {chip}
                 </span>
               ))}

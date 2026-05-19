@@ -68,3 +68,46 @@ body {
   position: relative;
   z-index: 1;
 }
+
+/* Tour price range slider */
+input[type=range].price-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+}
+input[type=range].price-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #d97706 var(--p, 100%), #e2e8f0 var(--p, 100%));
+}
+input[type=range].price-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+}
+input[type=range].price-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #0f172a;
+  border: 2px solid #d97706;
+  margin-top: -6px;
+  box-shadow: 0 2px 6px rgba(15,23,42,.2);
+  cursor: pointer;
+}
+input[type=range].price-slider::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #0f172a;
+  border: 2px solid #d97706;
+  cursor: pointer;
+}
+
+/* Seljuk pattern for tour hero */
+.seljuk-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Crect x='40' y='40' width='60' height='60' fill='none' stroke='white' stroke-width='1'/%3E%3Crect x='40' y='40' width='60' height='60' fill='none' stroke='white' stroke-width='1' transform='rotate(45 70 70)'/%3E%3Cpolygon points='70,46 90,56 100,70 90,84 70,94 50,84 40,70 50,56' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E");
+}

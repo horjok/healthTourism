@@ -160,7 +160,7 @@ export default function Navbar() {
                 {t('nav.profil')}
               </Link>
               <button onClick={cikisYap}
-                className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors border border-white/20 text-white/70 hover:border-red-400/50 hover:text-red-400">
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-xl transition-colors border border-white/20 text-white/70 hover:border-red-400/50 hover:text-red-400">
                 {t('nav.cikis')}
               </button>
             </>

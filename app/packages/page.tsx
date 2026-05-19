@@ -12,19 +12,37 @@ import { useDilContext } from '@/lib/DilContext';
 import { paketBaslikCevir } from '@/lib/translations';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
 
-// ─── Uzmanlık çevirileri (TR → EN) ───────────────────────────────────────────
+// ─── Uzmanlık çevirileri (DB değeri → görünen ad) ───────────────────────────
+// Anahtarlar veritabanındaki küçük harfli değerlerle birebir eşleşmeli.
+
+const UZMANLIK_TR: Record<string, string> = {
+  'diş': 'Diş',
+  'göz': 'Göz',
+  'estetik': 'Estetik',
+  'estetik cerrahi': 'Estetik Cerrahi',
+  'kardiyoloji': 'Kardiyoloji',
+  'ortopedi': 'Ortopedi',
+  'nöroloji': 'Nöroloji',
+  'dermatoloji': 'Dermatoloji',
+  'saç ekimi': 'Saç Ekimi',
+  'onkoloji': 'Onkoloji',
+  'psikiyatri': 'Psikiyatri',
+  'kalp': 'Kalp Cerrahisi',
+};
 
 const UZMANLIK_EN: Record<string, string> = {
-  'Ortopedi': 'Orthopedics',
   'diş': 'Dentistry',
   'göz': 'Ophthalmology',
+  'estetik': 'Aesthetics',
   'estetik cerrahi': 'Aesthetic Surgery',
   'kardiyoloji': 'Cardiology',
+  'ortopedi': 'Orthopedics',
   'nöroloji': 'Neurology',
   'dermatoloji': 'Dermatology',
   'saç ekimi': 'Hair Transplant',
   'onkoloji': 'Oncology',
   'psikiyatri': 'Psychiatry',
+  'kalp': 'Cardiac Surgery',
 };
 
 // ─── Filtre state tipi ────────────────────────────────────────────────────────
@@ -175,10 +193,10 @@ function PaketKarti({
                 key={u}
                 type="button"
                 onClick={() => onUzmanlikSec(u)}
-                title={tr ? `${u} ile filtrele` : `Filter by ${UZMANLIK_EN[u] ?? u}`}
+                title={tr ? `${UZMANLIK_TR[u] ?? u} ile filtrele` : `Filter by ${UZMANLIK_EN[u] ?? u}`}
                 className="inline-flex items-center rounded-full bg-cyan-50 px-2.5 py-0.5 text-[11px] font-medium text-aegean ring-1 ring-cyan-100 hover:ring-aegean transition-all cursor-pointer"
               >
-                {tr ? u : (UZMANLIK_EN[u] ?? u)}
+                {tr ? (UZMANLIK_TR[u] ?? u) : (UZMANLIK_EN[u] ?? u)}
               </button>
             ))}
           </div>
@@ -359,7 +377,7 @@ function FiltrePanel({
             >
               <option value="">{tr ? 'Tüm Uzmanlıklar' : 'All Specialties'}</option>
               {uzmanliklar.map((u) => (
-                <option key={u} value={u}>{tr ? u : (UZMANLIK_EN[u] ?? u)}</option>
+                <option key={u} value={u}>{tr ? (UZMANLIK_TR[u] ?? u) : (UZMANLIK_EN[u] ?? u)}</option>
               ))}
             </select>
             <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -188,7 +188,7 @@ export default function DownloadTicketButton({
   }
 
   const sinif = kompakt
-    ? 'inline-flex items-center justify-center gap-2 px-3 py-2 bg-amber-50 border border-amber-300 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+    ? 'h-9 min-w-[120px] inline-flex items-center justify-center gap-1.5 px-3.5 bg-amber-50 ring-1 ring-amber-200 text-amber-700 text-xs font-bold rounded-xl hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed'
     : 'inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-amber-500 text-[#0f172a] font-bold rounded-xl hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
 
   return (
