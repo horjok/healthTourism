@@ -86,7 +86,7 @@ export default function ToursPage() {
   const items = useCartStore(s => s.items);
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
-  const { setChatAcik } = useChatContext();
+  const { setChatAcik: _setChatAcik } = useChatContext();
 
   const [city, setCity] = useState('Antalya');
   const [category, setCategory] = useState('');

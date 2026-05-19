@@ -30,7 +30,7 @@ export default function TransferPage() {
   const { addItem } = useCartStore();
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
-  const { setChatAcik } = useChatContext();
+  const { setChatAcik: _setChatAcik } = useChatContext();
 
   const [transfers, setTransfers] = useState<TransferDB[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
