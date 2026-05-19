@@ -7,7 +7,6 @@ import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
-import { useChatContext } from '@/components/ui/ChatProvider';
 
 type TransferDB = {
   id: string;
@@ -30,7 +29,6 @@ export default function TransferPage() {
   const { addItem } = useCartStore();
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
-  const { setChatAcik: _setChatAcik } = useChatContext();
 
   const [transfers, setTransfers] = useState<TransferDB[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);

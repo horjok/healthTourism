@@ -6,7 +6,6 @@ import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
-import { useChatContext } from '@/components/ui/ChatProvider';
 
 type Tour = {
   id: number;
@@ -86,7 +85,6 @@ export default function ToursPage() {
   const items = useCartStore(s => s.items);
   const { formatla } = useDoviz();
   const { isKlinikYoneticisi } = useKullaniciContext();
-  const { setChatAcik: _setChatAcik } = useChatContext();
 
   const [city, setCity] = useState('Antalya');
   const [category, setCategory] = useState('');
