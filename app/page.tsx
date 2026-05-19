@@ -84,7 +84,7 @@ const MAG_KATEGORILER = [
     baslik: 'Göz Tedavisi',
     alt: 'LASIK · Katarakt',
     fiyatEur: 1290,
-    foto: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80',
+    foto: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80',
     jci: false,
   },
 ];
