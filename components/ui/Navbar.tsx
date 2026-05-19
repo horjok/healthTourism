@@ -90,7 +90,7 @@ export default function Navbar() {
           ))}
           <button
             onClick={() => setChatAcik(true)}
-            className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-amber-500 text-[#0f172a] hover:bg-amber-400 glow-gold"
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-amber-500 text-[#0f172a] hover:bg-amber-400 glow-gold whitespace-nowrap"
           >
             {tr ? '✨ AI Öneri' : '✨ AI Suggestion'}
           </button>
@@ -166,7 +166,7 @@ export default function Navbar() {
             </>
           ) : (
             <Link href="/auth"
-              className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors bg-amber-500 text-[#0f172a] hover:bg-amber-400">
+              className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors bg-amber-500 text-[#0f172a] hover:bg-amber-400 whitespace-nowrap">
               {t('nav.giris')}
             </Link>
           )}

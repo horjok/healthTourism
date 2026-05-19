@@ -1,15 +1,15 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 export type Para = 'EUR' | 'USD' | 'GBP' | 'TRY';
 
-// EUR bazlı dönüşüm katsayıları
-const KURLAR: Record<Para, number> = {
+// Fallback: API çekilemezse kullanılır
+const FALLBACK_KURLAR: Record<Para, number> = {
   EUR: 1.00,
-  USD: 1.08,
-  GBP: 0.86,
-  TRY: 35.50,
+  USD: 1.16,
+  GBP: 0.87,
+  TRY: 52.94,
 };
 
 const SEMBOLLER: Record<Para, string> = {
@@ -26,22 +26,46 @@ interface DovizContextType {
   formatla: (eurFiyat: number) => string;
   sembol: string;
   kur: number;
+  kurYuklendi: boolean;
 }
 
 const DovizContext = createContext<DovizContextType>({
-  para:    'EUR',
+  para: 'EUR',
   setPara: () => {},
-  cevir:   (f) => f,
-  formatla:(f) => `€${f.toLocaleString('tr-TR')}`,
-  sembol:  '€',
-  kur:     1.00,
+  cevir: (f) => f,
+  formatla: (f) => `€${f.toLocaleString('tr-TR')}`,
+  sembol: '€',
+  kur: 1.00,
+  kurYuklendi: false,
 });
 
 export function DovizProvider({ children }: { children: React.ReactNode }) {
   const [para, setPara] = useState<Para>('EUR');
+  const [kurlar, setKurlar] = useState<Record<Para, number>>(FALLBACK_KURLAR);
+  const [kurYuklendi, setKurYuklendi] = useState(false);
+
+  useEffect(() => {
+    // frankfurter.app — ECB verileri, key gerektirmez, ücretsiz
+    fetch('https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,TRY')
+      .then(r => r.json())
+      .then((json: { rates?: { USD?: number; GBP?: number; TRY?: number } }) => {
+        if (json.rates?.USD && json.rates?.GBP && json.rates?.TRY) {
+          setKurlar({
+            EUR: 1.00,
+            USD: json.rates.USD,
+            GBP: json.rates.GBP,
+            TRY: json.rates.TRY,
+          });
+        }
+      })
+      .catch(() => {
+        // API ulaşılamazsa fallback kurlar zaten yüklü, sessizce devam
+      })
+      .finally(() => setKurYuklendi(true));
+  }, []);
 
   function cevir(eurFiyat: number): number {
-    return Math.round(eurFiyat * KURLAR[para]);
+    return Math.round(eurFiyat * kurlar[para]);
   }
 
   function formatla(eurFiyat: number): string {
@@ -54,7 +78,7 @@ export function DovizProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DovizContext.Provider value={{ para, setPara, cevir, formatla, sembol: SEMBOLLER[para], kur: KURLAR[para] }}>
+    <DovizContext.Provider value={{ para, setPara, cevir, formatla, sembol: SEMBOLLER[para], kur: kurlar[para], kurYuklendi }}>
       {children}
     </DovizContext.Provider>
   );

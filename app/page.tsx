@@ -8,14 +8,46 @@ import { useDoviz } from '@/lib/DovizContext';
 import { useChatContext } from '@/components/ui/ChatProvider';
 
 const YORUMLAR = [
-  { ad: 'James W.',  kod: 'GB', ulke: 'İngiltere',       puan: 5, yorum: 'FUE saç ekimi için İstanbul\'a geldim. Klinik muhteşemdi. HealthTour süreci baştan sona yönetti.' },
-  { ad: 'Sophie L.', kod: 'DE', ulke: 'Almanya',         puan: 5, yorum: 'Hollywood Smile işlemim için Türkiye\'yi seçtim. Almanya\'daki fiyatların çok altında, aynı kalite.' },
-  { ad: 'Ahmed K.',  kod: 'SA', ulke: 'Suudi Arabistan', puan: 5, yorum: 'LASIK için geldiğimde her şey organize edilmişti. Otel, transfer, klinik — hepsi mükemmeldi.' },
-  { ad: 'Emma T.',   kod: 'NL', ulke: 'Hollanda',        puan: 4, yorum: 'Rinoplasti için Türkiye\'yi tercih ettim. Doktorlar çok profesyoneldi, iyileşme süreci hızlıydı.' },
-  { ad: 'Carlos M.', kod: 'ES', ulke: 'İspanya',         puan: 5, yorum: 'Diş implantı için geldim, Almanya\'da ödeyeceğimin üçte birine yaptırdım. Kalitenin farkı yok.' },
-  { ad: 'Maria V.',  kod: 'IT', ulke: 'İtalya',          puan: 5, yorum: 'Estetik cerrahi için en iyi tercihi yaptım. Her şey çok iyi planlanmıştı. Muhteşem bir deneyimdi!' },
-  { ad: 'David H.',  kod: 'US', ulke: 'ABD',             puan: 4, yorum: 'Ortopedi için İstanbul\'a geldim. Amerika\'daki maliyetle kıyaslanmaz. Çok rahat bir süreçti.' },
-  { ad: 'Fatima A.', kod: 'AE', ulke: 'BAE',             puan: 5, yorum: 'Onkoloji tedavisi için Türkiye\'ye geldim. Doktorlar dünya standartlarında, klinik son teknolojiye sahip.' },
+  {
+    ad: 'James W.',  kod: 'GB', ulke: 'İngiltere',       ulkeEn: 'United Kingdom',   puan: 5,
+    yorum:   'FUE saç ekimi için İstanbul\'a geldim. Klinik muhteşemdi. HealthTour süreci baştan sona yönetti.',
+    yorumEn: 'I came to Istanbul for FUE hair transplant. The clinic was amazing. HealthTour managed the whole process from start to finish.',
+  },
+  {
+    ad: 'Sophie L.', kod: 'DE', ulke: 'Almanya',         ulkeEn: 'Germany',          puan: 5,
+    yorum:   'Hollywood Smile işlemim için Türkiye\'yi seçtim. Almanya\'daki fiyatların çok altında, aynı kalite.',
+    yorumEn: 'I chose Turkey for my Hollywood Smile procedure. A fraction of German prices, same quality.',
+  },
+  {
+    ad: 'Ahmed K.',  kod: 'SA', ulke: 'Suudi Arabistan', ulkeEn: 'Saudi Arabia',     puan: 5,
+    yorum:   'LASIK için geldiğimde her şey organize edilmişti. Otel, transfer, klinik — hepsi mükemmeldi.',
+    yorumEn: 'Everything was arranged when I arrived for LASIK. Hotel, transfer, clinic — all perfectly organized.',
+  },
+  {
+    ad: 'Emma T.',   kod: 'NL', ulke: 'Hollanda',        ulkeEn: 'Netherlands',      puan: 4,
+    yorum:   'Rinoplasti için Türkiye\'yi tercih ettim. Doktorlar çok profesyoneldi, iyileşme süreci hızlıydı.',
+    yorumEn: 'I chose Turkey for rhinoplasty. The doctors were very professional and the recovery was quick.',
+  },
+  {
+    ad: 'Carlos M.', kod: 'ES', ulke: 'İspanya',         ulkeEn: 'Spain',            puan: 5,
+    yorum:   'Diş implantı için geldim, Almanya\'da ödeyeceğimin üçte birine yaptırdım. Kalitenin farkı yok.',
+    yorumEn: 'Came for dental implants, paid a third of what I would have in Germany. Absolutely no difference in quality.',
+  },
+  {
+    ad: 'Maria V.',  kod: 'IT', ulke: 'İtalya',          ulkeEn: 'Italy',            puan: 5,
+    yorum:   'Estetik cerrahi için en iyi tercihi yaptım. Her şey çok iyi planlanmıştı. Muhteşem bir deneyimdi!',
+    yorumEn: 'Best decision for aesthetic surgery. Everything was meticulously planned. A truly wonderful experience!',
+  },
+  {
+    ad: 'David H.',  kod: 'US', ulke: 'ABD',             ulkeEn: 'United States',    puan: 4,
+    yorum:   'Ortopedi için İstanbul\'a geldim. Amerika\'daki maliyetle kıyaslanmaz. Çok rahat bir süreçti.',
+    yorumEn: 'Came to Istanbul for orthopedic surgery. Incomparable to US costs. The whole process was very smooth.',
+  },
+  {
+    ad: 'Fatima A.', kod: 'AE', ulke: 'BAE',             ulkeEn: 'UAE',              puan: 5,
+    yorum:   'Onkoloji tedavisi için Türkiye\'ye geldim. Doktorlar dünya standartlarında, klinik son teknolojiye sahip.',
+    yorumEn: 'I came to Turkey for oncology treatment. World-class doctors and a clinic with state-of-the-art technology.',
+  },
 ];
 
 const MAG_KATEGORILER = [
@@ -24,7 +56,7 @@ const MAG_KATEGORILER = [
     sehir: 'İstanbul · 7 gün',
     baslik: 'Saç Ekimi',
     alt: 'FUE · DHI · Safir',
-    fiyat: '€2.190',
+    fiyatEur: 2190,
     foto: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=900&q=80',
     jci: true,
   },
@@ -33,7 +65,7 @@ const MAG_KATEGORILER = [
     sehir: 'Antalya · 5 gün',
     baslik: 'Diş Sağlığı',
     alt: 'İmplant · Hollywood Smile',
-    fiyat: '€3.450',
+    fiyatEur: 3450,
     foto: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=900&q=80',
     jci: true,
   },
@@ -42,7 +74,7 @@ const MAG_KATEGORILER = [
     sehir: 'İzmir · 6 gün',
     baslik: 'Estetik Cerrahi',
     alt: 'Rinoplasti · Liposuction',
-    fiyat: '€2.890',
+    fiyatEur: 2890,
     foto: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&w=900&q=80',
     jci: true,
   },
@@ -51,7 +83,7 @@ const MAG_KATEGORILER = [
     sehir: 'İzmir · 3 gün',
     baslik: 'Göz Tedavisi',
     alt: 'LASIK · Katarakt',
-    fiyat: '€1.290',
+    fiyatEur: 1290,
     foto: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80',
     jci: false,
   },
@@ -98,6 +130,7 @@ const SEHIRLER = ['İstanbul', 'Antalya', 'İzmir','Antalya','Bursa','Adana','Ga
 
 export default function HomePage() {
   const { dil } = useDilContext();
+  const { formatla } = useDoviz();
   const { setChatAcik, setOnAcilMesaj } = useChatContext();
   const [paketler, setPaketler] = useState<Paket[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -348,7 +381,7 @@ export default function HomePage() {
                   <div className="mt-4 flex items-end justify-between">
                     <div>
                       <div className="text-[10px] uppercase tracking-wider text-white/55">{tr ? 'Başlangıç' : 'From'}</div>
-                      <div className="font-serif text-2xl text-white">{kat.fiyat}</div>
+                      <div className="font-serif text-2xl text-white">{formatla(kat.fiyatEur)}</div>
                     </div>
                     <span className="rounded-full bg-white/15 ring-1 ring-white/25 px-3 py-1.5 text-[11px] font-semibold backdrop-blur">
                       {tr ? 'İncele →' : 'Explore →'}
@@ -534,14 +567,14 @@ export default function HomePage() {
                     <span key={s} className={s < y.puan ? 'text-amber-500' : 'text-slate-300'}>★</span>
                   ))}
                 </div>
-                <p className="mt-3 font-serif text-lg leading-snug text-navy italic">&ldquo;{y.yorum}&rdquo;</p>
+                <p className="mt-3 font-serif text-lg leading-snug text-navy italic">&ldquo;{tr ? y.yorum : y.yorumEn}&rdquo;</p>
                 <div className="mt-5 flex items-center gap-3 border-t border-slate-200 pt-4">
                   <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-aegean to-navy text-sm font-bold text-white">
                     {y.ad.charAt(0)}
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-navy">{y.ad}</div>
-                    <div className="text-xs text-slate-500"><span className="font-mono">{y.kod}</span> {y.ulke}</div>
+                    <div className="text-xs text-slate-500"><span className="font-mono">{y.kod}</span> {tr ? y.ulke : y.ulkeEn}</div>
                   </div>
                 </div>
               </article>

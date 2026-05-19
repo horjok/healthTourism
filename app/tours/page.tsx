@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Footer from '@/components/ui/Footer';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
@@ -248,6 +249,7 @@ export default function ToursPage() {
           })}
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

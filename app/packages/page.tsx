@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Footer from '@/components/ui/Footer';
 import type { Paket } from '@/lib/types';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
@@ -924,7 +925,8 @@ function PackagesInner() {
             </div>
           </div>
         </section>
-      </main>
+      <Footer />
+    </main>
     </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Footer from '@/components/ui/Footer';
 import { useDilContext } from '@/lib/DilContext';
 import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
@@ -227,6 +228,7 @@ export default function HotelsPage() {
           </div>
         )}
       </div>
+      <Footer />
     </main>
   );
 }

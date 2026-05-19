@@ -179,20 +179,11 @@ export type ÇeviriAnahtari = keyof typeof ÇEVIRILER;
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useDilContext } from '@/lib/DilContext';
 
 export function useDil() {
-  const [dil, setDilState] = useState<Dil>('tr');
-
-  useEffect(() => {
-    const kayitli = localStorage.getItem('healthtour_dil') as Dil | null;
-    if (kayitli === 'tr' || kayitli === 'en') setDilState(kayitli);
-  }, []);
-
-  const setDil = useCallback((yeniDil: Dil) => {
-    setDilState(yeniDil);
-    localStorage.setItem('healthtour_dil', yeniDil);
-  }, []);
+  const { dil, setDil } = useDilContext();
 
   const t = useCallback((anahtar: ÇeviriAnahtari): string => {
     return ÇEVIRILER[anahtar][dil];

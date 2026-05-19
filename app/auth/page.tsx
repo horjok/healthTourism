@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Footer from '@/components/ui/Footer';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 type Sekme = 'giris' | 'kayit';
@@ -585,7 +586,8 @@ export default function AuthPage() {
             </div>
           </section>
         </div>
-      </main>
+      <Footer />
+    </main>
     </>
   );
 }
