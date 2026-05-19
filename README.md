@@ -28,9 +28,7 @@
 
 ---
 
-## ✨ Öne Çıkan "Wow" Özellikleri
-
-HealthTour, bir hackathon demosunun çok ötesinde, **üretim seviyesi mimari kararlar** ile inşa edildi. İşte sizi etkileyecek 6 teknik fark:
+## ✨ Öne Çıkan Özellikleri
 
 ### 1. 🧠 3-Aşamalı Hibrit AI Pipeline
 Saf LLM çağrılarının halüsinasyon riskini ortadan kaldıran, **deterministik skorlama + LLM sentezi** karışımı:
@@ -256,6 +254,6 @@ Bu bir hackathon demosudur. Aşağıdaki sadeleştirmeler **bilinçli** olarak y
 
 **🏥 HealthTour** — _Bir hackathon projesi olarak doğdu, üretim seviyesi mimari ile yetişti._
 
-Türkiye'nin sağlık turizmindeki **uluslararası gücünü dijitalleştirmek** için, ❤️ ile yapıldı.
+Türkiye'nin sağlık turizmindeki **uluslararası gücünü dijitalleştirmek** için yapıldı.
 
 </div>
