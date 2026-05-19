@@ -13,9 +13,10 @@ export async function GET(req: NextRequest) {
     const klinikId  = searchParams.get('klinik_id') ?? undefined;
     const sehir     = searchParams.get('sehir') ?? undefined;
     const minPuan   = searchParams.get('min_puan');
-    const ucusDahil = searchParams.get('ucus_dahil');
-    const otelDahil = searchParams.get('otel_dahil');
-    const akredite  = searchParams.get('akredite');
+    const ucusDahil      = searchParams.get('ucus_dahil');
+    const otelDahil      = searchParams.get('otel_dahil');
+    const transferDahil  = searchParams.get('transfer_dahil');
+    const akredite       = searchParams.get('akredite');
 
     if (id) {
       const data = await getPaketById(id);
@@ -28,9 +29,10 @@ export async function GET(req: NextRequest) {
       min_puan:  minPuan   ? Number(minPuan)   : undefined,
       klinik_id: klinikId,
       sehir,
-      ucus_dahil: ucusDahil === 'true' ? true : ucusDahil === 'false' ? false : undefined,
-      otel_dahil: otelDahil === 'true' ? true : otelDahil === 'false' ? false : undefined,
-      akredite:   akredite  === 'true' ? true : akredite  === 'false' ? false : undefined,
+      ucus_dahil:      ucusDahil     === 'true' ? true : ucusDahil     === 'false' ? false : undefined,
+      otel_dahil:      otelDahil     === 'true' ? true : otelDahil     === 'false' ? false : undefined,
+      transfer_dahil:  transferDahil === 'true' ? true : transferDahil === 'false' ? false : undefined,
+      akredite:        akredite      === 'true' ? true : akredite      === 'false' ? false : undefined,
     });
 
     return NextResponse.json({ success: true, data });

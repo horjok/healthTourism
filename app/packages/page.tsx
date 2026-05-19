@@ -34,6 +34,7 @@ interface FiltreState {
   sehir: string;
   ucusDahil: boolean;
   otelDahil: boolean;
+  transferDahil: boolean;
   akredite: boolean;
   minPuan: string;
 }
@@ -44,6 +45,7 @@ const BOSH_FILTRE: FiltreState = {
   sehir: '',
   ucusDahil: false,
   otelDahil: false,
+  transferDahil: false,
   akredite: false,
   minPuan: '',
 };
@@ -304,7 +306,7 @@ function FiltrePanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filtreler.uzmanlik, filtreler.maxFiyat, filtreler.sehir,
-    filtreler.ucusDahil, filtreler.otelDahil, filtreler.akredite, filtreler.minPuan,
+    filtreler.ucusDahil, filtreler.otelDahil, filtreler.transferDahil, filtreler.akredite, filtreler.minPuan,
     kur,
   ]);
 
@@ -326,7 +328,7 @@ function FiltrePanel({
   }
 
   // Chip'ler tıklamayla anlık filtreyi tetikler
-  function toggleChip(k: 'ucusDahil' | 'otelDahil' | 'akredite') {
+  function toggleChip(k: 'ucusDahil' | 'otelDahil' | 'transferDahil' | 'akredite') {
     const yeniLokal = { ...lokal, [k]: !lokal[k] };
     setLokal(yeniLokal);
     const eurMax = yeniLokal.maxFiyat
@@ -443,6 +445,14 @@ function FiltrePanel({
             </svg>
             {tr ? 'Otel Dahil' : 'Hotel Included'}
           </button>
+          <button onClick={() => toggleChip('transferDahil')} className={chip(lokal.transferDahil)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
+              <rect x="9" y="11" width="14" height="10" rx="1" />
+              <circle cx="12" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+            </svg>
+            {tr ? 'Transfer Dahil' : 'Transfer Included'}
+          </button>
           <button onClick={() => toggleChip('akredite')} className={chip(lokal.akredite)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-amber-500">
               <path d="m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" />
@@ -498,6 +508,7 @@ function PackagesInner() {
       sehir: searchParams.get('sehir') ?? '',
       ucusDahil: searchParams.get('ucus_dahil') === 'true',
       otelDahil: searchParams.get('otel_dahil') === 'true',
+      transferDahil: searchParams.get('transfer_dahil') === 'true',
       akredite: searchParams.get('akredite') === 'true',
       minPuan: searchParams.get('min_puan') ?? '',
     };
@@ -541,6 +552,7 @@ function PackagesInner() {
     if (f.sehir) p.set('sehir', f.sehir);
     if (f.ucusDahil) p.set('ucus_dahil', 'true');
     if (f.otelDahil) p.set('otel_dahil', 'true');
+    if (f.transferDahil) p.set('transfer_dahil', 'true');
     if (f.akredite) p.set('akredite', 'true');
     if (f.minPuan) p.set('min_puan', f.minPuan);
     fetch(`/api/packages${p.size ? '?' + p.toString() : ''}`)
@@ -568,6 +580,7 @@ function PackagesInner() {
     if (f.sehir) p.set('sehir', f.sehir);
     if (f.ucusDahil) p.set('ucus_dahil', 'true');
     if (f.otelDahil) p.set('otel_dahil', 'true');
+    if (f.transferDahil) p.set('transfer_dahil', 'true');
     if (f.akredite) p.set('akredite', 'true');
     if (f.minPuan) p.set('min_puan', f.minPuan);
     router.replace(`/packages${p.size ? '?' + p.toString() : ''}`, { scroll: false });

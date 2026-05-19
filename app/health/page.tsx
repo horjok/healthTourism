@@ -2,6 +2,7 @@
 
 import { Fragment, useState, useEffect } from 'react';
 import { useDilContext } from '@/lib/DilContext';
+import { useDoviz } from '@/lib/DovizContext';
 import { useCartStore } from '@/lib/cartStore';
 import { useKullaniciContext } from '@/lib/KullaniciContext';
 
@@ -48,6 +49,7 @@ const CATEGORIES: { id: string; tr: string; en: string; paths: string[]; circles
 export default function HealthPage() {
   const { dil } = useDilContext();
   const tr = dil === 'tr';
+  const { formatla } = useDoviz();
   const { addItem } = useCartStore();
   const { isKlinikYoneticisi } = useKullaniciContext();
 
@@ -339,7 +341,7 @@ export default function HealthPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{tr ? "'den" : 'from'}</div>
-                            <div className="font-serif text-2xl text-navy leading-none">€{op.price_from.toLocaleString('tr-TR')}</div>
+                            <div className="font-serif text-2xl text-navy leading-none">{formatla(op.price_from)}</div>
                           </div>
                         </div>
                         <div className="mt-4 flex items-center justify-between">
@@ -453,7 +455,7 @@ export default function HealthPage() {
                               </div>
                               <div className="text-right shrink-0">
                                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{tr ? "'den" : 'from'}</div>
-                                <div className="font-serif text-2xl text-navy leading-none">€{clinic.price_from.toLocaleString('tr-TR')}</div>
+                                <div className="font-serif text-2xl text-navy leading-none">{formatla(clinic.price_from)}</div>
                               </div>
                             </div>
 
@@ -544,7 +546,15 @@ export default function HealthPage() {
                         type="date"
                         value={date}
                         min={new Date().toISOString().split('T')[0]}
-                        onChange={e => setDate(e.target.value)}
+                        max={new Date(new Date().setFullYear(new Date().getFullYear() + 3)).toISOString().split('T')[0]}
+                        onChange={e => {
+                          const val = e.target.value;
+                          const today = new Date().toISOString().split('T')[0];
+                          const maxDate = new Date(new Date().setFullYear(new Date().getFullYear() + 3)).toISOString().split('T')[0];
+                          if (val < today) setDate(today);
+                          else if (val > maxDate) setDate(maxDate);
+                          else setDate(val);
+                        }}
                         className="w-full rounded-xl border border-slate-200 bg-pearl/50 pl-10 pr-3.5 py-3 text-sm font-medium text-navy focus:outline-none focus:ring-2 focus:ring-aegean/40 focus:border-aegean"
                       />
                     </div>
@@ -556,7 +566,7 @@ export default function HealthPage() {
                     </div>
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="font-serif text-3xl text-navy leading-none">
-                        {total !== null ? `€${total.toLocaleString('tr-TR')}` : '€—'}
+                        {total !== null ? formatla(total) : '—'}
                       </span>
                       <span className="text-xs text-slate-400">/{tr ? 'kişi başlangıç' : 'per person from'}</span>
                     </div>

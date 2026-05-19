@@ -47,6 +47,7 @@ interface PaketFiltreler {
   sehir?: string;
   ucus_dahil?: boolean;
   otel_dahil?: boolean;
+  transfer_dahil?: boolean;
   akredite?: boolean;
   min_puan?: number;
 }
@@ -82,8 +83,9 @@ export async function getPaketler(
   if (filtreler?.baslik_arama)  query = query.ilike('baslik', `%${filtreler.baslik_arama}%`);
   if (filtreler?.max_fiyat !== undefined)  query = query.lte('toplam_fiyat', filtreler.max_fiyat);
   if (filtreler?.tarih)                    query = query.gte('tarih', filtreler.tarih);
-  if (filtreler?.ucus_dahil !== undefined) query = query.eq('ucus_dahil', filtreler.ucus_dahil);
-  if (filtreler?.otel_dahil !== undefined) query = query.eq('otel_dahil', filtreler.otel_dahil);
+  if (filtreler?.ucus_dahil !== undefined)    query = query.eq('ucus_dahil', filtreler.ucus_dahil);
+  if (filtreler?.otel_dahil !== undefined)    query = query.eq('otel_dahil', filtreler.otel_dahil);
+  if (filtreler?.transfer_dahil !== undefined) query = query.eq('transfer_dahil', filtreler.transfer_dahil);
 
   const { data, error } = await query.order('toplam_fiyat', { ascending: true });
   if (error) throw new Error(`Paketler getirilemedi: ${error.message}`);
