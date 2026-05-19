@@ -1,139 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPaketler } from '@/lib/supabase';
-import type { Paket } from '@/lib/types';
+// Gemini'den bağımsız, %100 deterministik öneri ucu.
+// AI pipeline (/api/ai/chat) düşerse veya istemci hızlı bir tarama isterse devreye girer.
+// Akış: ChatIstegi → cikarimYapFallback (kural tabanlı) → enIyiPaketleriBul (ağırlıklı skor) → sentezYazFallback (şablon Türkçe).
+// Aynı PipelineSonucu zarfını üretir — chat route ile birebir uyumlu istemci tarafı.
 
-// ─── İstek gövdesi ────────────────────────────────────────────────────────────
+import { NextRequest } from 'next/server';
+import { cikarimYapFallback, sentezYazFallback, FALLBACK_UYARISI } from '@/lib/fallback';
+import { enIyiPaketleriBul } from '@/lib/recommend';
+import { ok, err, fail } from '@/lib/api-response';
+import type { ChatIstegi, PipelineSonucu } from '@/lib/types';
 
-interface OneriIstegi {
-  uzmanlik: string;
-  butce: number;
-  sehir_tercihi: string | null;
-  akredite_tercih: boolean;
-}
-
-// ─── Puanlama algoritması ─────────────────────────────────────────────────────
-
-function paketiPuanla(paket: Paket, istek: OneriIstegi): number {
-  let puan = 0;
-
-  // ── 1. Uzmanlık eşleşmesi (40 puan) ────────────────────────────────────────
-  const klinikUzmanliklar = paket.klinik.uzmanlik.map((u) => u.toLocaleLowerCase('tr-TR'));
-  const arananUzmanlik    = istek.uzmanlik.toLocaleLowerCase('tr-TR');
-
-  if (klinikUzmanliklar.includes(arananUzmanlik)) {
-    // Tam eşleşme
-    puan += 40;
-  } else if (klinikUzmanliklar.some((u) => u.includes(arananUzmanlik) || arananUzmanlik.includes(u))) {
-    // Kısmi eşleşme (birisi diğerini içeriyorsa)
-    puan += 20;
-  }
-  // Eşleşme yok: 0p
-
-  // ── 2. Bütçe uygunluğu (30 puan) ───────────────────────────────────────────
-  const fiyat = paket.toplam_fiyat;
-
-  if (fiyat <= istek.butce) {
-    // Bütçe içinde
-    puan += 30;
-  } else if (fiyat <= istek.butce * 1.20) {
-    // %20'ye kadar üstünde
-    puan += 15;
-  }
-  // %20'den fazla üstünde: 0p
-
-  // ── 3. Klinik puanı (20 puan) ──────────────────────────────────────────────
-  const klinikPuan = paket.klinik.puan;
-
-  if (klinikPuan > 4.5) {
-    puan += 20;
-  } else if (klinikPuan >= 4.0) {
-    puan += 15;
-  } else if (klinikPuan >= 3.5) {
-    puan += 10;
-  }
-  // 3.5 altı: 0p
-
-  // ── 4. Akreditasyon (10 puan) ───────────────────────────────────────────────
-  if (paket.klinik.akredite && istek.akredite_tercih) {
-    // Akredite ve tercih ediliyor
-    puan += 10;
-  } else if (paket.klinik.akredite) {
-    // Akredite ama tercih edilmiyor
-    puan += 5;
-  }
-
-  return puan;
-}
-
-// ─── Route handler ────────────────────────────────────────────────────────────
+// Deterministik akış olduğu için kısa tutuyoruz — yalnız DB sorgu süresini örter.
+const RECOMMEND_TIMEOUT_MS = 8_000;
 
 export async function POST(req: NextRequest) {
   try {
-    // Gövdeyi parse et
-    const body = (await req.json()) as Partial<OneriIstegi>;
+    const body = (await req.json()) as ChatIstegi;
 
-    // Zorunlu alan kontrolü
-    if (!body.uzmanlik || body.butce === undefined || body.butce === null) {
-      return NextResponse.json(
-        { success: false, error: 'uzmanlik ve butce alanları zorunludur' },
-        { status: 400 }
-      );
+    if (!body.mesaj?.trim()) {
+      return err('Mesaj boş olamaz', 400);
     }
 
-    const istek: OneriIstegi = {
-      uzmanlik:        body.uzmanlik,
-      butce:           Number(body.butce),
-      sehir_tercihi:   body.sehir_tercihi ?? null,
-      akredite_tercih: body.akredite_tercih ?? false,
-    };
+    // AbortController ile DB sorgusunun asılı kalmamasını garantiliyoruz.
+    const controller = new AbortController();
+    const zamanasimi = setTimeout(() => controller.abort(), RECOMMEND_TIMEOUT_MS);
 
-    // Tüm paketleri Supabase'den çek
-    const paketler = await getPaketler();
+    try {
+      const cikarim = cikarimYapFallback(body.mesaj, body.butce);
 
-    // Her pakete puan hesapla
-    const puanMap: Record<string, number> = {};
-    const puanliPaketler = paketler.map((paket) => {
-      let puan = paketiPuanla(paket, istek);
-
-      // Şehir tercihi bonusu — algoritmanın dışında küçük avantaj
-      if (
-        istek.sehir_tercihi &&
-        paket.klinik.sehir.toLocaleLowerCase('tr-TR') ===
-          istek.sehir_tercihi.toLocaleLowerCase('tr-TR')
-      ) {
-        puan += 5; // Tercih edilen şehirde: +5 bonus
+      // Kapsam dışı sorgu — pipeline'ı kısa devre yap, chat route ile aynı şekil.
+      if (cikarim.kapsamDisi) {
+        const data: PipelineSonucu = {
+          uzmanlik_alani: 'kapsam_disi',
+          oneri_ozeti: 'Sadece sağlık turizmi, klinik paketleri ve seyahat planlaması hakkında yardımcı olabilirim.',
+          guvenilirlik_skoru: 0,
+          uyarilar: [FALLBACK_UYARISI],
+          onerilen_paketler: [],
+          ham_analiz: { agent1: 'kapsam_disi', agent2: '', agent3: 'kural_tabanli' },
+        };
+        return ok(data);
       }
 
-      puanMap[paket.id] = puan;
-      return { paket, puan };
-    });
+      const paketler = await enIyiPaketleriBul(cikarim);
 
-    // Puana göre azalan sırada sırala, en yüksek 3'ü al
-    puanliPaketler.sort((a, b) => b.puan - a.puan);
-    const ilkUc = puanliPaketler.slice(0, 3);
+      if (controller.signal.aborted) {
+        return err('Öneri sorgusu zaman aşımına uğradı, lütfen tekrar deneyin', 504);
+      }
 
-    // Sıfır puanlı paket varsa çıktıya dahil etme (hiç eşleşmedi)
-    const oneriler = ilkUc
-      .filter(({ puan }) => puan > 0)
-      .map(({ paket }) => paket);
+      const ozetMetin = sentezYazFallback(body.mesaj, paketler);
+      const ilkPaket = paketler[0];
 
-    // Sadece önerilen paketlerin puanlarını döndür
-    const donenPuanlar: Record<string, number> = {};
-    oneriler.forEach((paket) => {
-      donenPuanlar[paket.id] = puanMap[paket.id];
-    });
+      const uyarilar: string[] = [FALLBACK_UYARISI];
+      if (paketler.length === 0) {
+        uyarilar.push('Kriterlere uyan paket bulunamadı. Bütçenizi yükseltmeyi veya şehir filtresini kaldırmayı deneyin.');
+      }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        oneriler,
-        puanlar: donenPuanlar,
-      },
-    });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: 'Öneri hesaplanamadı, lütfen tekrar deneyin' },
-      { status: 500 }
+      const data: PipelineSonucu = {
+        uzmanlik_alani: cikarim.uzmanlik,
+        oneri_ozeti: ozetMetin,
+        guvenilirlik_skoru: ilkPaket
+          ? Math.round((ilkPaket.klinik.puan / 5) * 80 + (ilkPaket.klinik.akredite ? 20 : 0))
+          : 0,
+        uyarilar,
+        onerilen_paketler: paketler.map((p) => ({
+          paket_id: p.id,
+          baslik: p.baslik,
+          klinik_isim: p.klinik.isim,
+          sehir: p.klinik.sehir,
+          tahmini_fiyat: `${p.toplam_fiyat} €`,
+          sure_gun: p.sure_gun,
+          avantajlar: [
+            p.klinik.akredite ? 'JCI Akredite' : 'Deneyimli Ekip',
+            `${p.klinik.puan}/5.0 hasta memnuniyeti`,
+            p.otel_dahil ? 'Otel dahil' : '',
+            p.ucus_dahil ? 'Uçuş dahil' : '',
+          ].filter(Boolean),
+        })),
+        ham_analiz: {
+          agent1: JSON.stringify(cikarim),
+          agent2: `${paketler.length} paket bulundu`,
+          agent3: 'kural_tabanli_sentez',
+        },
+      };
+
+      return ok(data);
+    } finally {
+      clearTimeout(zamanasimi);
+    }
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
+    return fail(
+      isTimeout ? 'Öneri sorgusu zaman aşımına uğradı, lütfen tekrar deneyin' : 'Öneri üretilemedi, lütfen tekrar deneyin',
+      error,
+      isTimeout ? 504 : 500,
     );
   }
 }

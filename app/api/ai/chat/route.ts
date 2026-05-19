@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cikarimYap, sentezYaz } from '@/lib/gemini';
+import { cikarimYapFallback, sentezYazFallback, FALLBACK_UYARISI } from '@/lib/fallback';
 import { enIyiPaketleriBul } from '@/lib/recommend';
 import { createServerSupabase, createAdminClient } from '@/lib/supabase-clients';
-import type { ChatIstegi, PipelineSonucu, KullaniciRolu } from '@/lib/types';
+import type { ChatIstegi, CikarimSonucu, PipelineSonucu, KullaniciRolu } from '@/lib/types';
 
 // Tüm pipeline için üst sınır — bireysel agent timeout (15s × 2) + işlem tamponu
 const PIPELINE_TIMEOUT_MS = 35_000;
@@ -98,8 +99,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Agent 1: Kullanıcı metninden uzmanlik + bütçe + şehir çıkar
-    const cikarim = await cikarimYap(body.mesaj, body.butce);
+    // Agent 1: Kullanıcı metninden uzmanlik + bütçe + şehir çıkar.
+    // Gemini patlarsa kural tabanlı yedeğe düş — pipeline kesilmez, yalnız bozulmuş modda devam eder.
+    let cikarim: CikarimSonucu;
+    let bozulmusMod = false;
+    try {
+      cikarim = await cikarimYap(body.mesaj, body.butce);
+    } catch (e) {
+      console.warn('Gemini cikarimYap başarısız, kural tabanlı yedeğe geçiliyor:', e instanceof Error ? e.message : e);
+      cikarim = cikarimYapFallback(body.mesaj, body.butce);
+      bozulmusMod = true;
+    }
 
     // Kapsam dışı sorgu — pipeline'ı kısa devre yap
     if (cikarim.kapsamDisi) {
@@ -120,8 +130,16 @@ export async function POST(req: NextRequest) {
     // Deterministik Algoritma: ağırlıklı skor ile top-3 paket
     const paketler = await enIyiPaketleriBul(cikarim);
 
-    // Agent 2: Gerçek paketleri sıcak Türkçeyle sun (0 paket → özür)
-    const ozetMetin = await sentezYaz(body.mesaj, paketler);
+    // Agent 2: Gerçek paketleri sıcak Türkçeyle sun (0 paket → özür).
+    // Gemini patlarsa şablon tabanlı yedek devreye girer — özet eksik kalmaz.
+    let ozetMetin: string;
+    try {
+      ozetMetin = await sentezYaz(body.mesaj, paketler);
+    } catch (e) {
+      console.warn('Gemini sentezYaz başarısız, kural tabanlı yedeğe geçiliyor:', e instanceof Error ? e.message : e);
+      ozetMetin = sentezYazFallback(body.mesaj, paketler);
+      bozulmusMod = true;
+    }
 
     const ilkPaket = paketler[0];
 
@@ -131,9 +149,12 @@ export async function POST(req: NextRequest) {
       guvenilirlik_skoru: ilkPaket
         ? Math.round((ilkPaket.klinik.puan / 5) * 80 + (ilkPaket.klinik.akredite ? 20 : 0))
         : 0,
-      uyarilar: paketler.length === 0
-        ? ['Kriterlere uyan paket bulunamadı. Bütçenizi yükseltmeyi veya şehir filtresini kaldırmayı deneyin.']
-        : [],
+      uyarilar: [
+        ...(bozulmusMod ? [FALLBACK_UYARISI] : []),
+        ...(paketler.length === 0
+          ? ['Kriterlere uyan paket bulunamadı. Bütçenizi yükseltmeyi veya şehir filtresini kaldırmayı deneyin.']
+          : []),
+      ],
       onerilen_paketler: paketler.map(p => ({
         paket_id: p.id,
         baslik: p.baslik,
