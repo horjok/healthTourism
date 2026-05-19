@@ -351,11 +351,15 @@ Kurallar:
 
 Kullanıcı metni: "${mesaj.slice(0, 500)}"`;
 
+  // Transport hatalarını (tüm anahtarlar/modeller başarısız, timeout, ağ) propagate et —
+  // chat route bunları yakalayıp cikarimYapFallback'e (kural tabanlı) düşer.
+  const ham = await withTimeout(
+    callGeminiWithFallback(prompt, SISTEM_TALIMATI),
+    'Çıkarım zaman aşımına uğradı, lütfen tekrar deneyin'
+  );
+
+  // Yalnız parse/şema hatasını burada kurtar — Gemini cevap verdi ama bozuk JSON.
   try {
-    const ham = await withTimeout(
-      callGeminiWithFallback(prompt, SISTEM_TALIMATI),
-      'Çıkarım zaman aşımına uğradı, lütfen tekrar deneyin'
-    );
     const parsed = JSON.parse(jsonTemizle(ham)) as CikarimSonucu;
     if (parsed.uzmanlik === 'kapsam_disi') {
       return { uzmanlik: 'kapsam_disi', maxButce: null, sehir: null, kapsamDisi: true };
