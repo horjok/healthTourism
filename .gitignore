@@ -1,48 +1,62 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ─── Bağımlılıklar ──────────────────────────────────────────────
 /node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
-# testing
+# ─── Test & Coverage ────────────────────────────────────────────
 /coverage
 
-# next.js
+# ─── Next.js Build Çıktıları ────────────────────────────────────
 /.next/
 /out/
-
-# production
 /build
 
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
+# ─── TypeScript Derleme Önbellek ────────────────────────────────
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-ozet3.md
-ozet2.md
-ozet1.md
-ozet.md
+# ─── İşletim Sistemi Artıkları ──────────────────────────────────
+.DS_Store
+Thumbs.db
+*.pem
 
-# Claude Code tooling
-.claude/
+# ─── Debug Logları ──────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── Ortam Değişkenleri (HASSAS — ASLA COMMIT ETME) ─────────────
+.env
+.env.local
+.env*.local
+.env.development
+.env.production
+
+# ─── Vercel Deploy Artıkları ────────────────────────────────────
+.vercel
+
+# ─── İç Notlar / Geliştirme Özetleri ────────────────────────────
 ozet*.md
 healthtour_frontend_ozet.md
+notlar*.md
+TODO.md
+NOTES.md
+
+# ─── AI Tooling / İç Scaffolding (Hackathon jürisinden gizli) ───
+.claude/
+CLAUDE.md
+skills/
+.cursor/
+.cursorrules
+.aider*
+.github/copilot-instructions.md
+
+# ─── IDE / Editor ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
